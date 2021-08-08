@@ -1,9 +1,9 @@
-use std::fmt::{self, Display, Debug};
+use std::fmt::{self, Debug, Display};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use std::str::FromStr;
 
 use cidr::{Cidr, Ipv4Cidr, Ipv6Cidr};
-use num_traits::{Bounded, NumAssignOps, NumCast, Zero, PrimInt, WrappingAdd};
+use num_traits::{Bounded, NumAssignOps, NumCast, PrimInt, WrappingAdd, Zero};
 
 use crate::utils::MathLog2;
 
@@ -61,8 +61,8 @@ impl FromStr for EitherIpRange {
             .and_then(|(ip, cidr)| Some((ip.parse::<IpAddr>().ok()?, cidr.parse::<u8>().ok()?)))
         {
             Ok(match ip {
-                IpAddr::V4(ip) => EitherIpRange::V4(Ipv4Range(ip, 2.pow(32 - cidr as u32))),
-                IpAddr::V6(ip) => EitherIpRange::V6(Ipv6Range(ip, 2.pow(128 - cidr as u32))),
+                IpAddr::V4(ip) => EitherIpRange::V4(Ipv4Range::from_cidr_pair((ip, cidr))),
+                IpAddr::V6(ip) => EitherIpRange::V6(Ipv6Range::from_cidr_pair((ip, cidr))),
             })
         } else {
             Err(())
@@ -85,6 +85,7 @@ pub trait IpRange: Copy + Clone + Eq + Ord + Display + Debug {
     ) -> Self;
     fn into_cidr_pair_decimal(self) -> (Self::AddressDecimal, Self::AddressDecimal);
     fn full() -> Self {
+        // 0, 0 indicates 0.0.0.0/0 because Self::AddressDecimal::max_value() + 1 == 0
         Self::from_cidr_pair_decimal((Self::AddressDecimal::zero(), Self::AddressDecimal::zero()))
     }
     // fn format_cidr(&self) -> fmt::Arguments;
@@ -110,7 +111,13 @@ macro_rules! impl_ip_range {
             }
 
             fn from_cidr_pair(first_address_and_cidr: (Self::Address, u8)) -> Self {
-                Self::from(first_address_and_cidr)
+                Self(
+                    first_address_and_cidr.0,
+                    <Self::AddressDecimal as NumCast>::from(2).unwrap().pow(
+                        std::mem::size_of::<$address_type>() as u32 * 8
+                            - first_address_and_cidr.1 as u32,
+                    ),
+                )
             }
 
             fn into_cidr_pair(self) -> (Self::Address, u8) {
@@ -120,7 +127,10 @@ macro_rules! impl_ip_range {
             fn from_cidr_pair_decimal(
                 first_address_decimal_and_length: (Self::AddressDecimal, Self::AddressDecimal),
             ) -> Self {
-                Self::from(first_address_decimal_and_length)
+                Self(
+                    Self::Address::from(first_address_decimal_and_length.0),
+                    first_address_decimal_and_length.1,
+                )
             }
 
             fn into_cidr_pair_decimal(self) -> (Self::AddressDecimal, Self::AddressDecimal) {
@@ -136,10 +146,7 @@ macro_rules! impl_ip_range {
 
         impl From<($address_type, u8)> for $ip_range {
             fn from(first_address_and_cidr: ($address_type, u8)) -> $ip_range {
-                $ip_range(
-                    first_address_and_cidr.0,
-                    <$decimal_type as NumCast>::from(first_address_and_cidr.1).unwrap(),
-                )
+                Self::from_cidr_pair(first_address_and_cidr)
             }
         }
 
@@ -154,10 +161,7 @@ macro_rules! impl_ip_range {
 
         impl From<($decimal_type, $decimal_type)> for $ip_range {
             fn from(first_address_decimal_and_length: ($decimal_type, $decimal_type)) -> $ip_range {
-                $ip_range(
-                    $address_type::from(first_address_decimal_and_length.0),
-                    first_address_decimal_and_length.1,
-                )
+                Self::from_cidr_pair_decimal(first_address_decimal_and_length)
             }
         }
 
@@ -169,17 +173,15 @@ macro_rules! impl_ip_range {
 
         impl fmt::Display for $ip_range {
             fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-                if self.first_address_as_decimal() == $decimal_type::zero() && self.length() == 0 {
-                    write!(f, "0.0.0.0/0")
+                let cidr = if self.first_address_as_decimal() == $decimal_type::zero()
+                    && self.length() == 0
+                {
+                    0
                 } else {
-                    write!(
-                        f,
-                        "{}/{}",
-                        self.0,
-                        std::mem::size_of::<$decimal_type>() as u32 * 8
-                            - self.1.checked_log2().expect("Range not normalized yet")
-                    )
-                }
+                    std::mem::size_of::<$decimal_type>() as u32 * 8
+                        - self.1.checked_log2().expect("Range not normalized yet")
+                };
+                write!(f, "{}/{}", self.0, cidr)
             }
         }
     };

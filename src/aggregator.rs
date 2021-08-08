@@ -77,6 +77,9 @@ fn aggregate<R: IpRange>(mut ranges: Vec<R>) -> Vec<R> {
 }
 
 fn reverse<R: IpRange>(ranges: Vec<R>) -> Vec<R> {
+    if ranges.is_empty() {
+        return vec![R::full()];
+    }
     let mut reversed_ranges = Vec::new();
     let mut last_decimal = R::AddressDecimal::zero();
     for range in ranges.into_iter() {

@@ -27,20 +27,20 @@ fn main() -> io::Result<()> {
     let (mut v4ranges, mut v6ranges, invalid_entries) = parse_cidrs(&input);
     v4ranges = v4ranges.aggregate();
     v6ranges = v6ranges.aggregate();
-    dbg!(&v4ranges);
+    // dbg!(&v4ranges);
     if opt.reverse {
         v4ranges = v4ranges.reverse();
         v6ranges = v6ranges.reverse();
-        dbg!(&v4ranges);
+        // dbg!(&v4ranges);
     }
     v4ranges = v4ranges.normalize();
-    dbg!(&v4ranges);
-    // v6ranges = v6ranges.normalize();
+    // dbg!(&v4ranges);
+    v6ranges = v6ranges.normalize();
     println!("{}", &export(&v4ranges));
     if !v4ranges.is_empty() && !v6ranges.is_empty() {
         println!("");
     }
-    // println!("{}", &export(&v6ranges));
+    println!("{}", &export(&v6ranges));
     // writeln!(&mut std::io::stderr(), "{}", v4ranges)?;
     // writeln!(&mut std::io::stderr(), "{}", v6ranges)?;
 
