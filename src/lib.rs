@@ -1,0 +1,265 @@
+use std::fmt::{self, Display, Debug};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
+use std::str::FromStr;
+
+use cidr::{Cidr, Ipv4Cidr, Ipv6Cidr};
+use num_traits::{Bounded, NumAssignOps, NumCast, Zero, PrimInt, WrappingAdd};
+
+use crate::utils::MathLog2;
+
+// #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+// pub struct CIDRv4(Ipv4Addr, u8);
+
+// #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+// pub struct CIDRv6(Ipv6Addr, u8);
+
+// trait CidrAggregator
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Ipv4Range(Ipv4Addr, u32);
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Ipv6Range(Ipv6Addr, u128);
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub enum EitherIpRange {
+    V4(Ipv4Range),
+    V6(Ipv6Range),
+}
+
+impl EitherIpRange {
+    pub fn into_v4(self) -> Option<Ipv4Range> {
+        match self {
+            EitherIpRange::V4(r) => Some(r),
+            _ => None,
+        }
+    }
+
+    pub fn into_v6(self) -> Option<Ipv6Range> {
+        match self {
+            EitherIpRange::V6(r) => Some(r),
+            _ => None,
+        }
+    }
+
+    pub fn is_v4(self) -> bool {
+        self.into_v4().is_some()
+    }
+
+    pub fn is_v6(self) -> bool {
+        self.into_v6().is_some()
+    }
+}
+
+impl FromStr for EitherIpRange {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<EitherIpRange, ()> {
+        if let Some((ip, cidr)) = s
+            .split_once("/")
+            .or(Some((s, "1")))
+            .and_then(|(ip, cidr)| Some((ip.parse::<IpAddr>().ok()?, cidr.parse::<u8>().ok()?)))
+        {
+            Ok(match ip {
+                IpAddr::V4(ip) => EitherIpRange::V4(Ipv4Range(ip, 2.pow(32 - cidr as u32))),
+                IpAddr::V6(ip) => EitherIpRange::V6(Ipv6Range(ip, 2.pow(128 - cidr as u32))),
+            })
+        } else {
+            Err(())
+        }
+    }
+}
+
+pub trait IpRange: Copy + Clone + Eq + Ord + Display + Debug {
+    type Address; // TODO: how to associate Address with AddressDecimal somehow?
+    type AddressDecimal: PrimInt + NumAssignOps + WrappingAdd + Bounded + Debug;
+    type Cidr: Cidr;
+
+    fn first_address(&self) -> Self::Address;
+    fn first_address_as_decimal(&self) -> Self::AddressDecimal;
+    fn length(&self) -> Self::AddressDecimal;
+    fn from_cidr_pair(first_address_and_cidr: (Self::Address, u8)) -> Self;
+    fn into_cidr_pair(self) -> (Self::Address, u8);
+    fn from_cidr_pair_decimal(
+        first_address_decimal_and_length: (Self::AddressDecimal, Self::AddressDecimal),
+    ) -> Self;
+    fn into_cidr_pair_decimal(self) -> (Self::AddressDecimal, Self::AddressDecimal);
+    fn full() -> Self {
+        Self::from_cidr_pair_decimal((Self::AddressDecimal::zero(), Self::AddressDecimal::zero()))
+    }
+    // fn format_cidr(&self) -> fmt::Arguments;
+}
+
+macro_rules! impl_ip_range {
+    ($ip_range: ident, $address_type: ident, $decimal_type: ident, $cidr_type: ident) => {
+        impl IpRange for $ip_range {
+            type Address = $address_type;
+            type AddressDecimal = $decimal_type;
+            type Cidr = $cidr_type;
+
+            fn first_address(&self) -> Self::Address {
+                self.0
+            }
+
+            fn first_address_as_decimal(&self) -> Self::AddressDecimal {
+                self.0.into()
+            }
+
+            fn length(&self) -> Self::AddressDecimal {
+                self.1
+            }
+
+            fn from_cidr_pair(first_address_and_cidr: (Self::Address, u8)) -> Self {
+                Self::from(first_address_and_cidr)
+            }
+
+            fn into_cidr_pair(self) -> (Self::Address, u8) {
+                self.into()
+            }
+
+            fn from_cidr_pair_decimal(
+                first_address_decimal_and_length: (Self::AddressDecimal, Self::AddressDecimal),
+            ) -> Self {
+                Self::from(first_address_decimal_and_length)
+            }
+
+            fn into_cidr_pair_decimal(self) -> (Self::AddressDecimal, Self::AddressDecimal) {
+                self.into()
+            }
+
+            // fn format_cidr(&self) -> fmt::Arguments {
+            //     let cidr: u32 = self.1.checked_log2().expect("Range not normalized yet");
+            //     let a = 1;
+            //     format_args!("{}/{}", a, a)
+            // }
+        }
+
+        impl From<($address_type, u8)> for $ip_range {
+            fn from(first_address_and_cidr: ($address_type, u8)) -> $ip_range {
+                $ip_range(
+                    first_address_and_cidr.0,
+                    <$decimal_type as NumCast>::from(first_address_and_cidr.1).unwrap(),
+                )
+            }
+        }
+
+        impl From<$ip_range> for ($address_type, u8) {
+            fn from(range: $ip_range) -> ($address_type, u8) {
+                (
+                    range.0,
+                    range.1.checked_log2().expect("Range not normalized yet") as u8,
+                )
+            }
+        }
+
+        impl From<($decimal_type, $decimal_type)> for $ip_range {
+            fn from(first_address_decimal_and_length: ($decimal_type, $decimal_type)) -> $ip_range {
+                $ip_range(
+                    $address_type::from(first_address_decimal_and_length.0),
+                    first_address_decimal_and_length.1,
+                )
+            }
+        }
+
+        impl From<$ip_range> for ($decimal_type, $decimal_type) {
+            fn from(range: $ip_range) -> ($decimal_type, $decimal_type) {
+                (range.0.into(), range.1)
+            }
+        }
+
+        impl fmt::Display for $ip_range {
+            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                if self.first_address_as_decimal() == $decimal_type::zero() && self.length() == 0 {
+                    write!(f, "0.0.0.0/0")
+                } else {
+                    write!(
+                        f,
+                        "{}/{}",
+                        self.0,
+                        std::mem::size_of::<$decimal_type>() as u32 * 8
+                            - self.1.checked_log2().expect("Range not normalized yet")
+                    )
+                }
+            }
+        }
+    };
+}
+
+impl_ip_range!(Ipv4Range, Ipv4Addr, u32, Ipv4Cidr);
+impl_ip_range!(Ipv6Range, Ipv6Addr, u128, Ipv6Cidr);
+
+trait CidrExt: Cidr {
+    type AddressDecimal: PrimInt + NumAssignOps + Bounded;
+
+    fn first_address_as_decimal(&self) -> Self::AddressDecimal;
+}
+
+// impl CidrExt for Ipv4Cidr {
+//     type AddressDecimal = u32;
+// }
+
+// impl CidrExt for Ipv6Cidr {
+//     type AddressDecimal = u128;
+// }
+
+macro_rules! impl_cidr_ext {
+    ($cidr: ident, $decimal_type: ident) => {
+        impl CidrExt for $cidr {
+            type AddressDecimal = $decimal_type;
+
+            fn first_address_as_decimal(&self) -> Self::AddressDecimal {
+                self.first_address().into()
+            }
+        }
+    };
+}
+
+impl_cidr_ext!(Ipv4Cidr, u32);
+impl_cidr_ext!(Ipv6Cidr, u128);
+
+// #[derive(Debug, Clone)]
+// pub struct Ipv4Ranges(Vec<Ipv4Cidr>);
+
+// #[derive(Debug, Clone)]
+// pub struct Ipv6Ranges(Vec<Ipv4Cidr>);
+
+// // impl Display for CIDRv4 {
+// //     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result{
+// //         write!(f, "{}/{}", self.0, 32 - self.1.log2())
+// //     }
+// // }
+// // impl Display for CIDRv6 {
+// //     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result{
+// //         write!(f, "{}/{}", self.0, 32 - self.1.log2())
+// //     }
+// // }
+
+// trait CIDR {
+//     type AddrType;
+// }
+
+// impl CIDR for CIDRv4 {
+//     type AddrType = Ipv4Addr;
+// }
+
+// impl CIDR for CIDRv6 {
+//     type AddrType = Ipv6Addr;
+// }
+
+pub mod aggregator;
+pub mod parser;
+mod utils;
+
+macro_rules! for_wasm {
+    ($($item:item)*) => {$(
+        #[cfg(target_arch = "wasm32")]
+        $item
+    )*}
+}
+
+for_wasm! {
+    mod wasm;
+}
+
+#[cfg(test)]
+mod tests;
