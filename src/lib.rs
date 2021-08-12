@@ -2,7 +2,7 @@ use std::fmt::{self, Debug, Display};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use std::str::FromStr;
 
-use cidr::{Cidr, Ipv4Cidr, Ipv6Cidr};
+// use cidr::{Cidr, Ipv4Cidr, Ipv6Cidr};
 use num_traits::{Bounded, NumAssignOps, NumCast, PrimInt, WrappingAdd, Zero};
 
 use crate::utils::MathLog2;
@@ -72,8 +72,7 @@ impl FromStr for EitherIpRange {
 
 pub trait IpRange: Copy + Clone + Eq + Ord + Display + Debug {
     type Address; // TODO: how to associate Address with AddressDecimal somehow?
-    type AddressDecimal: PrimInt + NumAssignOps + WrappingAdd + Bounded + Debug;
-    type Cidr: Cidr;
+    type AddressDecimal: PrimInt + NumAssignOps + WrappingAdd + Bounded + Display + Debug;
 
     fn first_address(&self) -> Self::Address;
     fn first_address_as_decimal(&self) -> Self::AddressDecimal;
@@ -92,11 +91,10 @@ pub trait IpRange: Copy + Clone + Eq + Ord + Display + Debug {
 }
 
 macro_rules! impl_ip_range {
-    ($ip_range: ident, $address_type: ident, $decimal_type: ident, $cidr_type: ident) => {
+    ($ip_range: ident, $address_type: ident, $decimal_type: ident) => {
         impl IpRange for $ip_range {
             type Address = $address_type;
             type AddressDecimal = $decimal_type;
-            type Cidr = $cidr_type;
 
             fn first_address(&self) -> Self::Address {
                 self.0
@@ -111,12 +109,17 @@ macro_rules! impl_ip_range {
             }
 
             fn from_cidr_pair(first_address_and_cidr: (Self::Address, u8)) -> Self {
-                Self(
-                    first_address_and_cidr.0,
+                let length = if  first_address_and_cidr.1 == 0 {
+                    0 // Self::AddressDecimal::max_value() + 1
+                } else {
                     <Self::AddressDecimal as NumCast>::from(2).unwrap().pow(
                         std::mem::size_of::<$address_type>() as u32 * 8
                             - first_address_and_cidr.1 as u32,
-                    ),
+                    )
+                };
+                Self(
+                    first_address_and_cidr.0,
+                    length,
                 )
             }
 
@@ -187,14 +190,14 @@ macro_rules! impl_ip_range {
     };
 }
 
-impl_ip_range!(Ipv4Range, Ipv4Addr, u32, Ipv4Cidr);
-impl_ip_range!(Ipv6Range, Ipv6Addr, u128, Ipv6Cidr);
+impl_ip_range!(Ipv4Range, Ipv4Addr, u32);
+impl_ip_range!(Ipv6Range, Ipv6Addr, u128);
 
-trait CidrExt: Cidr {
-    type AddressDecimal: PrimInt + NumAssignOps + Bounded;
+// trait CidrExt: Cidr {
+//     type AddressDecimal: PrimInt + NumAssignOps + Bounded;
 
-    fn first_address_as_decimal(&self) -> Self::AddressDecimal;
-}
+//     fn first_address_as_decimal(&self) -> Self::AddressDecimal;
+// }
 
 // impl CidrExt for Ipv4Cidr {
 //     type AddressDecimal = u32;
@@ -204,20 +207,20 @@ trait CidrExt: Cidr {
 //     type AddressDecimal = u128;
 // }
 
-macro_rules! impl_cidr_ext {
-    ($cidr: ident, $decimal_type: ident) => {
-        impl CidrExt for $cidr {
-            type AddressDecimal = $decimal_type;
+// macro_rules! impl_cidr_ext {
+//     ($cidr: ident, $decimal_type: ident) => {
+//         impl CidrExt for $cidr {
+//             type AddressDecimal = $decimal_type;
 
-            fn first_address_as_decimal(&self) -> Self::AddressDecimal {
-                self.first_address().into()
-            }
-        }
-    };
-}
+//             fn first_address_as_decimal(&self) -> Self::AddressDecimal {
+//                 self.first_address().into()
+//             }
+//         }
+//     };
+// }
 
-impl_cidr_ext!(Ipv4Cidr, u32);
-impl_cidr_ext!(Ipv6Cidr, u128);
+// impl_cidr_ext!(Ipv4Cidr, u32);
+// impl_cidr_ext!(Ipv6Cidr, u128);
 
 // #[derive(Debug, Clone)]
 // pub struct Ipv4Ranges(Vec<Ipv4Cidr>);

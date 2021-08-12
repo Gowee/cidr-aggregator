@@ -1,9 +1,9 @@
-use std::{array, cmp::min};
+use std::{array, cmp::min, mem};
 
 use super::IpRange;
 use crate::utils::MathLog2;
 
-use cidr::Cidr;
+// use cidr::Cidr;
 use num_traits::{pow, Bounded, FromPrimitive, NumAssignOps, NumCast, NumOps, PrimInt, Zero, One, WrappingAdd};
 
 pub trait Aggregator<R: IpRange> {
@@ -13,37 +13,50 @@ pub trait Aggregator<R: IpRange> {
 
     fn normalize(self) -> Vec<R>;
 
-    // fn aggregated(&mut self);
+    fn aggregated(&mut self);
 
-    // fn reversed(&mut self);
+    fn reversed(&mut self);
 
-    // fn normalized(&mut self);
+    fn normalized(&mut self);
+
+    fn count_address(&self) -> R::AddressDecimal;
 }
 
 impl<R: IpRange> Aggregator<R> for Vec<R> {
+    #[must_use = "for in-place modification, there is `aggregated`"]
     fn aggregate(self) -> Vec<R> {
         aggregate(self)
     }
 
+    #[must_use = "for in-place modification, there is `reversed`"]
     fn reverse(self) -> Vec<R> {
         reverse(self)
     }
 
+    #[must_use = "for in-place modification, there is `normalzied`"]
     fn normalize(self) -> Vec<R> {
         normalize(self)
     }
 
-    // fn aggregated(&mut self) {
-    //     *self = (*self).aggregate();
-    // }
+    fn aggregated(&mut self) {
+        *self = mem::take(self).aggregate();
+    }
 
-    // fn reversed(&mut self) {
+    fn reversed(&mut self) {
+        *self = mem::take(self).reverse();
+    }
 
-    // }
+    fn normalized(&mut self) {
+        *self = mem::take(self).normalize();
+    }
 
-    // fn normalized(&mut self) {
-
-    // }
+    fn count_address(&self) -> R::AddressDecimal {
+        let mut count = R::AddressDecimal::zero();
+        for range in self.iter() {
+            count += range.length()
+        }
+        count
+    }
 }
 
 fn aggregate<R: IpRange>(mut ranges: Vec<R>) -> Vec<R> {
@@ -62,7 +75,7 @@ fn aggregate<R: IpRange>(mut ranges: Vec<R>) -> Vec<R> {
     let mut last_range = ranges_iter.next().unwrap();
     for range in ranges_iter {
         if range.0 - last_range.0 == last_range.1 {
-            last_range = (last_range.0, last_range.1 + range.1)
+            last_range = (last_range.0, last_range.1.wrapping_add(&range.1));
         } else {
             aggregated_ranges.push(R::from_cidr_pair_decimal(last_range));
             last_range = range;

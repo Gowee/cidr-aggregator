@@ -49,8 +49,9 @@ fn main() -> io::Result<()> {
         for entry in invalid_entries.iter() {
             eprintln!("{}", entry);
         }
+        eprintln!("");
         return Err(io::Error::new(io::ErrorKind::InvalidData, "One or more lines are invalid"));
+        
     }
-
     Ok(())
 }

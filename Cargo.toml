@@ -1,8 +1,8 @@
 [package]
 authors = ["Hung-I Wang <whygowe@gmail.com>"]
+edition = "2018"
 name = "cidr-aggregator"
 version = "0.0.0"
-edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -10,12 +10,13 @@ edition = "2018"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-cidr = "0.1"
+# cidr = "0.1"
 num-traits = "0.2"
+serde = {version = "1.0", features = ["derive"]}
 structopt = "0.3"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-wasm-bindgen = "0.2"
+wasm-bindgen = {version = "0.2", features = ["serde-serialize"]}
 
 # The `console_error_panic_hook` crate provides better debugging of panics by
 # logging them with `console.error`. This is great for development, but requires
