@@ -67,18 +67,22 @@ pub struct OutputTriple {
     pub ranges: String,
     // TODO: use String for now to avoid exceeding MAX_SAFE_INTEGER
     //  ref: https://github.com/rustwasm/wasm-bindgen/issues/1156
+    pub line_count_before: usize,
+    pub line_count_after: usize,
     pub address_count_before: String,
     pub address_count_after: String
 }
 
 pub fn _aggregate<R: IpRange>(mut ranges: Vec<R>, reverse: bool) -> OutputTriple {
     ranges.aggregated();
+    let line_count_before = ranges.len();
     let address_count_before = ranges.count_address().to_string();
     if reverse {
         ranges.reversed();
     }
     ranges.normalized();
-    
+
+    let line_count_after = ranges.len();
     let address_count_after = ranges.count_address();
     let address_count_after = if address_count_after == R::AddressDecimal::zero() && !ranges.is_empty() {
         if mem::size_of::<R::AddressDecimal>() * 8== 32  {
@@ -93,6 +97,8 @@ pub fn _aggregate<R: IpRange>(mut ranges: Vec<R>, reverse: bool) -> OutputTriple
 
     OutputTriple {
         ranges: export(&ranges),
+        line_count_before,
+        line_count_after,
         address_count_before,
         address_count_after,
     }
@@ -101,11 +107,7 @@ pub fn _aggregate<R: IpRange>(mut ranges: Vec<R>, reverse: bool) -> OutputTriple
 #[wasm_bindgen]
 pub fn aggregate(cidrs: &str, options: &JsValue) -> JsValue {
     let (mut v4ranges, mut v6ranges, invalid_entries) = parse_cidrs(cidrs);
-    console_log!("{} {:?}", cidrs, options);
-    console_log!("{:?}", JsValue::into_serde::<Options>(options));
-    console_log!("{:?}", JsValue::into_serde::<String>(options));
     let options: Options = JsValue::into_serde(options).unwrap_or_default();
-    console_log!("{:?}", options);
     JsValue::from_serde( &Output {
         v4: _aggregate(v4ranges, options.reverse),
         v6: _aggregate(v6ranges, options.reverse),

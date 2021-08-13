@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, MouseEvent } from 'react';
 import CssBaseline from '@material-ui/core/CssBaseline';
 import Typography from '@material-ui/core/Typography';
 import { makeStyles } from '@material-ui/core/styles';
@@ -15,11 +15,19 @@ import FormGroup from '@material-ui/core/FormGroup';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 import Switch from '@material-ui/core/Switch';
 import GitHubIcon from '@material-ui/icons/GitHub';
-
-
+import Popover from '@material-ui/core/Popover';
+import IconButton from '@material-ui/core/IconButton';
+import Badge from '@material-ui/core/Badge';
+import WarningIcon from '@material-ui/icons/Warning';
+import Fab from '@material-ui/core/Fab';
+import Tooltip from '@material-ui/core/Tooltip';
+import orange from '@material-ui/core/colors/orange';
+// import ShoppingCartIcon from '@material-ui/core/ShoppingCartIcon';
 
 import logo from './logo.svg';
 import './App.css';
+
+import { count_lines } from './utils';
 
 const useStyles = makeStyles((theme) => ({
   // root: {
@@ -34,7 +42,8 @@ const useStyles = makeStyles((theme) => ({
   editorWrapper: {
     marginTop: theme.spacing(2),
     marginBottom: theme.spacing(2),
-    padding: theme.spacing(2)
+    padding: theme.spacing(2),
+    position: "relative" // for Fab positioning
   },
   editorStatus: {
     marginTop: theme.spacing(0.5),
@@ -54,6 +63,20 @@ const useStyles = makeStyles((theme) => ({
   },
   footer: {
     marginTop: theme.spacing(3)
+  },
+  warningFab: {
+    position: "absolute",
+    right: theme.spacing(3),
+    bottom: theme.spacing(5),
+    color: orange[500],
+    backgroundColor: "white",
+    borderColor: theme.palette.primary.light,
+    // "&:hover": {
+    //   backgroundColor: "white",
+    // }
+  },
+  fabWrapper: {
+    // position: "relative"
   }
   // footer: {
   //   padding: theme.spacing(3, 2),
@@ -62,6 +85,110 @@ const useStyles = makeStyles((theme) => ({
   //     theme.palette.type === 'light' ? theme.palette.grey[200] : theme.palette.grey[800],
   // },
 }));
+
+function OutputStatus({ output, classes }: { output: any, classes: any }) {
+  console.log(output);
+  let [showInvalid, setShowInvalid] = useState(false);
+  const invalid_count = useMemo(() => count_lines(output?.invalid), [output?.invalid]);
+  return (
+    <Grid container direction="row" justifyContent="space-between">
+      <Grid item>
+        <Typography variant="caption" color="textSecondary">
+          IPv4: {output?.v4?.line_count_before ?? 0}<abbr title="Lines">L</abbr> / {(output?.v4?.address_count_before ?? "0")}
+          &nbsp;&nbsp;➟&nbsp;&nbsp;
+          <b>{output?.v4?.line_count_after ?? 0}</b><abbr title="Lines">L</abbr> / <b>{(output?.v4?.address_count_after ?? "0")}</b>
+        </Typography>
+      </Grid>
+      <Grid item>
+        <Typography variant="caption" color="textSecondary">
+          IPv6: {output?.v6?.line_count_before ?? 0}<abbr title="Lines">L</abbr> / {(output?.v6?.address_count_before ?? "0")}
+          &nbsp;&nbsp;➟&nbsp;&nbsp;
+          <b>{output?.v6?.line_SwapVertcount_after ?? 0}</b><abbr title="Lines">L</abbr> / <b>{(output?.v6?.address_count_after ?? "0")}</b>
+        </Typography>
+      </Grid>
+      {/* {invalid_count > 0 || true &&
+        <Grid item>
+          <Badge badgeContent={invalid_count} color="secondary" title={invalid_count + " lines are invalid"}>
+            <WarningIcon />
+          </Badge>
+          <Typography variant="caption" color="textSecondary" onClick={() => setShowInvalid(true)}>
+            Invalid Lines: {invalid_count}
+          </Typography>
+          <Modal
+            open={showInvalid}
+            onClose={() => setShowInvalid(false)}
+            aria-labelledby="invalid-lines-modal"
+            aria-describedby="invalid-lines-description"
+          >
+            <>
+              <Typography variant="h2" id="invalid-lines-modal">Invalid Lines</Typography>
+              <Typography variant="body1" id="invalid-lines-description">
+                Valid entries are in the form of <code>IP/CIDR</code> with trailing <code>/CIDR</code>optionally omited.
+              </Typography>
+              <TextField
+                label="Invalid"
+                value={output?.invalid}
+              />
+            </>
+          </Modal>
+        </Grid>
+      } */}
+    </Grid>);
+  // <Typography variant="caption" color="textSecondary">
+  //   IPv4 Lines: {output?.v4?.line_count_before ?? 0} ➟ {output?.v4?.line_count_after ?? 0} |
+  //   IPv4 Addresses: {(output?.v4?.address_count_before ?? "0")} ➟ {(output?.v4?.address_count_after ?? "0")} |
+  //   IPv6 Lines: {output?.v6?.line_count_before ?? 0} ➟ {output?.v6?.line_count_after ?? 0} |
+  //   IPv6 Addresses: {(output?.v6?.address_count_before ?? "0")} ➟ {(output?.v6?.address_count_after ?? "0")} |
+  //   Invalid Lines: {count_lines(output?.invalid)}
+  // </Typography>);
+}
+
+function WarningFab({ className, invalidLines }: { className: string, invalidLines: string }) {
+  const invalid_count = useMemo(() => count_lines(invalidLines), [invalidLines]);
+
+  const [anchorEl, setAnchorEl] = React.useState(null as any);
+  const handleOpen = (event: MouseEvent) => {
+    setAnchorEl(event.currentTarget);
+  };
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+  const open = Boolean(anchorEl);
+  const id = open ? 'invalid-lines-popover' : undefined;
+
+  return invalid_count > 0 ? (
+    <>
+      <Tooltip title={invalid_count + " invalid lines"}>
+        <Fab size="small" className={className} aria-label="Show warnings" onClick={handleOpen}>
+          <Badge badgeContent={invalid_count} color="secondary">
+            <WarningIcon />
+          </Badge>
+        </Fab>
+      </Tooltip>
+      <Popover
+        id={id}
+        open={open}
+        anchorEl={anchorEl}
+        onClose={handleClose}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'center',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'center',
+        }}
+      >
+        <Typography variant="h5">Invalid lines</Typography>
+        <pre>
+          <code>
+            {invalidLines}
+          </code>
+        </pre>
+      </Popover>
+    </>
+  ) : (<></>);
+}
 
 function App() {
   const classes = useStyles();
@@ -85,7 +212,6 @@ function App() {
           {'Aggregate or reverse CIDRs (i.e. IP ranges)'}
         </Typography>
       </header>
-      {/* <Typography variant="body1">Sticky footer placeholder.</Typography> */}
       <main>
         <Paper elevation={1} className={classes.editorWrapper}>
           <TextField
@@ -99,7 +225,7 @@ function App() {
             onChange={(event) => setInput(event.target.value)}
           />
           <Box className={classes.editorStatus}>
-            <Typography variant="caption" color="textSecondary">Lines: | IPv4 Lines: 0 | IPv6 Lines: | Invalid: </Typography>
+            <Typography variant="caption" color="textSecondary">Lines: {useMemo(() => count_lines(input), [input])} </Typography>
           </Box>
         </Paper>
         <Paper elevation={1} className={classes.optionsWrapper}>
@@ -148,8 +274,9 @@ function App() {
             value={[output?.v4?.ranges, output?.v6?.ranges].filter((v) => v).join("\n")}
           />
           <Box className={classes.editorStatus}>
-            <Typography variant="caption" color="textSecondary">IPv4 Lines: {(output?.v4?.ranges ?? "").trim().split("\n").length} | IPv4 Addresses: {(output?.v4?.address_count_after ?? "0")} | IPv6 Lines: {(output?.v6?.ranges ?? "").trim().split("\n").length} | IPv6 Addresses: {(output?.v6?.address_count_after ?? "0")} | Invalid Lines: {(output?.invalid ?? "").trim().split("\n").length} </Typography>
+            <OutputStatus output={output} classes={classes} />
           </Box>
+          <WarningFab className={classes.warningFab} invalidLines={output?.invalid} />
         </Paper>
       </main>
       <footer className={classes.footer}>
@@ -171,23 +298,6 @@ function App() {
         </Grid>
       </footer>
     </Container>
-    // </Box>
-    // <div className="App">
-    //   <header className="App-header">
-    //     <img src={logo} className="App-logo" alt="logo" />
-    //     <p>
-    //       Edit <code>src/App.tsx</code> and save to reload.
-    //     </p>
-    //     <a
-    //       className="App-link"
-    //       href="https://reactjs.org"
-    //       target="_blank"
-    //       rel="noopener noreferrer"
-    //     >
-    //       Learn React
-    //     </a>
-    //   </header>
-    // </div>
   );
 }
 
