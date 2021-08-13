@@ -1,4 +1,4 @@
-use std::{array, cmp::min, mem};
+use std::{array, cmp::{min,max}, mem};
 
 use super::IpRange;
 use crate::utils::MathLog2;
@@ -74,8 +74,8 @@ fn aggregate<R: IpRange>(mut ranges: Vec<R>) -> Vec<R> {
     let mut aggregated_ranges = Vec::<R>::new();
     let mut last_range = ranges_iter.next().unwrap();
     for range in ranges_iter {
-        if range.0 - last_range.0 == last_range.1 {
-            last_range = (last_range.0, last_range.1.wrapping_add(&range.1));
+        if range.0 - last_range.0 <= last_range.1 {
+            last_range = (last_range.0, max(range.0 + range.1 - last_range.0, last_range.1));
         } else {
             aggregated_ranges.push(R::from_cidr_pair_decimal(last_range));
             last_range = range;

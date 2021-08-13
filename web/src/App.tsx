@@ -36,6 +36,10 @@ const useStyles = makeStyles((theme) => ({
     marginBottom: theme.spacing(2),
     padding: theme.spacing(2)
   },
+  editorStatus: {
+    marginTop: theme.spacing(0.5),
+    marginBottom: theme.spacing(-1),
+  },
   optionsWrapper: {
     marginTop: theme.spacing(-1),
     marginBottom: theme.spacing(-1),
@@ -68,6 +72,7 @@ function App() {
     setOutput(await aggregate(input, { reverse, ipKind: "Both" }));
   };
   console.log(output);
+  console.log((output?.V4?.ranges));
   return (
     // <Box display="flex">
     <Container component="main" className={classes.main} maxWidth="md">
@@ -93,7 +98,9 @@ function App() {
             value={input}
             onChange={(event) => setInput(event.target.value)}
           />
-          <Typography variant="caption" color="textSecondary">Lines: | IPv4 Lines: 0 | IPv6 Lines: | Invalid: </Typography>
+          <Box className={classes.editorStatus}>
+            <Typography variant="caption" color="textSecondary">Lines: | IPv4 Lines: 0 | IPv6 Lines: | Invalid: </Typography>
+          </Box>
         </Paper>
         <Paper elevation={1} className={classes.optionsWrapper}>
           <Grid
@@ -140,7 +147,9 @@ function App() {
             rows={16}
             value={[output?.v4?.ranges, output?.v6?.ranges].filter((v) => v).join("\n")}
           />
-          <Typography variant="caption" color="textSecondary">Lines: | IPv4 Lines: 0 | IPv6 Lines: 0 | IPv4 Count: | IPv6 Count:  </Typography>
+          <Box className={classes.editorStatus}>
+            <Typography variant="caption" color="textSecondary">IPv4 Lines: {(output?.v4?.ranges ?? "").trim().split("\n").length} | IPv4 Addresses: {(output?.v4?.address_count_after ?? "0")} | IPv6 Lines: {(output?.v6?.ranges ?? "").trim().split("\n").length} | IPv6 Addresses: {(output?.v6?.address_count_after ?? "0")} | Invalid Lines: {(output?.invalid ?? "").trim().split("\n").length} </Typography>
+          </Box>
         </Paper>
       </main>
       <footer className={classes.footer}>
