@@ -37,6 +37,7 @@ fn main() -> io::Result<()> {
     let mut input = String::new();
     io::stdin().lock().read_to_string(&mut input)?;
     let (mut v4ranges, mut v6ranges, invalid_entries) = parse_cidrs(&input);
+    
     v4ranges.aggregate();
     v6ranges.aggregate();
     if opt.reverse {
@@ -45,6 +46,7 @@ fn main() -> io::Result<()> {
     }
     v4ranges.normalize();
     v6ranges.normalize();
+
     if v4 && !v4ranges.is_empty() {
         println!("{}", v4ranges.export());
         if v6 && !v6ranges.is_empty() {

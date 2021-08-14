@@ -1,6 +1,7 @@
 use num_traits::PrimInt;
 use std::fmt::Display;
 use std::mem;
+use std::net::IpAddr;
 
 pub trait MathLog2 {
     // We follow the return type convention used in `.leading_zeros`.
@@ -36,5 +37,22 @@ pub fn to_string_overflow<T: PrimInt + Display>(num: T, zero_as_overflow: bool) 
         }
     } else {
         num.to_string()
+    }
+}
+
+pub fn ip_addr_to_bit_length(ipa: IpAddr) -> u32 {
+    if ipa.is_ipv4() {
+        32
+    } else if ipa.is_ipv6() {
+        128
+    } else {
+        unimplemented!()
+    }
+}
+
+pub fn ip_addr_trailing_zeros(ipa: IpAddr) -> u32 {
+    match ipa {
+        IpAddr::V4(ip) => u32::from(ip).trailing_zeros(),
+        IpAddr::V6(ip) => u128::from(ip).trailing_zeros(),
     }
 }
