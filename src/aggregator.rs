@@ -96,10 +96,12 @@ fn aggregated<R: IpRange>(mut ranges: Vec<R>) -> Vec<R> {
     let mut last_range = ranges_iter.next().unwrap();
     for range in ranges_iter {
         if range.0 - last_range.0 <= last_range.1 {
-            last_range = (
-                last_range.0,
-                max(range.0 + range.1 - last_range.0, last_range.1),
-            );
+            let length = (range.0 - last_range.0).wrapping_add(&range.1);
+            if length == R::AddressDecimal::zero() {
+                last_range = (last_range.0, R::AddressDecimal::zero());
+            } else {
+                last_range = (last_range.0, max(length, last_range.1));
+            }
         } else {
             aggregate_ranges.push(R::from_cidr_pair_decimal(last_range));
             last_range = range;
