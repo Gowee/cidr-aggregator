@@ -103,7 +103,7 @@ function OutputStatus({ output, classes }: { output: any, classes: any }) {
         <Typography variant="caption" color="textSecondary">
           IPv6: {output?.v6?.line_count_before ?? 0}<abbr title="Lines">L</abbr> / {(output?.v6?.address_count_before ?? "0")}
           &nbsp;&nbsp;➟&nbsp;&nbsp;
-          <b>{output?.v6?.line_SwapVertcount_after ?? 0}</b><abbr title="Lines">L</abbr> / <b>{(output?.v6?.address_count_after ?? "0")}</b>
+          <b>{output?.v6?.line_count_after ?? 0}</b><abbr title="Lines">L</abbr> / <b>{(output?.v6?.address_count_after ?? "0")}</b>
         </Typography>
       </Grid>
     </Grid>);
