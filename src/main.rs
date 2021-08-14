@@ -10,49 +10,60 @@ use ::cidr_aggregator::parser::parse_cidrs;
 #[derive(StructOpt, Debug)]
 #[structopt(name = "cidr-aggregator")]
 struct Opt {
-    /// reversed the ranges
-    #[structopt(short, long)]
-    reversed: bool,
+    /// Process IPv4 only; by default, both IPv4 and IPv6 are accepted
+    #[structopt(short="4", long)]
+    v4only: bool,
 
-    /// When activating, the program will exit with failure if there is invalid lines in input
+    /// Process IPv6 only; by default, both IPv4 and IPv6 are accepted
+    #[structopt(short="6", long)]
+    v6only: bool,
+
+    /// Reverse ranges
     #[structopt(short, long)]
-    strict: bool,
+    reverse: bool,
+
+    /// Ignore unrecognized lines; by default, it rejects with error
+    #[structopt(short="i", long)]
+    ignore_invalid: bool,
 }
 
 fn main() -> io::Result<()> {
     let opt = Opt::from_args();
-    // let ParseResult {v4ranges, v6ranges, invalid_entries} = parse_cidrs(io::stdin().lock().lines());
+    let (v4, v6) = if !(opt.v4only ^ opt.v6only) { 
+        (true, true)
+    } else {
+        (opt.v4only, opt.v6only)
+    };
     let mut input = String::new();
     io::stdin().lock().read_to_string(&mut input)?;
     let (mut v4ranges, mut v6ranges, invalid_entries) = parse_cidrs(&input);
-    v4ranges = v4ranges.aggregated();
-    v6ranges = v6ranges.aggregated();
-    // dbg!(&v4ranges);
-    if opt.reversed {
-        v4ranges = v4ranges.reversed();
-        v6ranges = v6ranges.reversed();
-        // dbg!(&v4ranges);
+    v4ranges.aggregate();
+    v6ranges.aggregate();
+    if opt.reverse {
+        v4ranges.reverse();
+        v6ranges.reverse();
     }
-    v4ranges = v4ranges.normalized();
-    // dbg!(&v4ranges);
-    v6ranges = v6ranges.normalized();
-    println!("{}", v4ranges.export());
-    if !v4ranges.is_empty() && !v6ranges.is_empty() {
-        println!();
+    v4ranges.normalize();
+    v6ranges.normalize();
+    if v4 && !v4ranges.is_empty() {
+        println!("{}", v4ranges.export());
+        if v6 && !v6ranges.is_empty() {
+            println!();
+        }
     }
-    println!("{}", &v6ranges.export());
-    // writeln!(&mut std::io::stderr(), "{}", v4ranges)?;
-    // writeln!(&mut std::io::stderr(), "{}", v6ranges)?;
+    if v6 && !v6ranges.is_empty() {
+        println!("{}", &v6ranges.export());
+    }
 
-    if opt.strict && !invalid_entries.is_empty() {
-        eprintln!("The following lines contains invalid CIDR entries:");
+    if !opt.ignore_invalid && !invalid_entries.is_empty() {
+        eprintln!("The following lines are not valid CIDRs, IPs or \"#\"-prefixed comments:\n");
         for entry in invalid_entries.iter() {
             eprintln!("{}", entry);
         }
         eprintln!();
         return Err(io::Error::new(
             io::ErrorKind::InvalidData,
-            "One or more lines are invalid",
+            "Some lines are invalid",
         ));
     }
     Ok(())

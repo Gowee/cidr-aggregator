@@ -45,12 +45,22 @@ impl EitherIpRange {
 impl FromStr for EitherIpRange {
     type Err = ();
 
-    fn from_str(s: &str) -> Result<EitherIpRange, ()> {
-        if let Some((ip, cidr)) = s
-            .split_once("/")
-            .or(Some((s, "1")))
-            .and_then(|(ip, cidr)| Some((ip.parse::<IpAddr>().ok()?, cidr.parse::<u8>().ok()?)))
+    fn from_str(s: &str) -> Result<EitherIpRange, Self::Err> {
+        if let Some((ip, cidr)) = s.split_once("/").or(Some((s, "")))
+        // .and_then(|(ip, cidr)| Some((ip.parse::<IpAddr>().ok()?, cidr.parse::<u8>().ok()?)))
         {
+            let ip = ip.parse::<IpAddr>().map_err(|_| ())?;
+            let cidr = if cidr.is_empty() {
+                if ip.is_ipv4() {
+                    32
+                } else if ip.is_ipv6() {
+                    128
+                } else {
+                    unimplemented!()
+                }
+            } else {
+                cidr.parse::<u8>().map_err(|_| ())?
+            };
             Ok(match ip {
                 IpAddr::V4(ip) => EitherIpRange::V4(Ipv4Range::from_cidr_pair((ip, cidr))),
                 IpAddr::V6(ip) => EitherIpRange::V6(Ipv6Range::from_cidr_pair((ip, cidr))),

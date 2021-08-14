@@ -7,6 +7,7 @@ use std::{
 
 use super::IpRange;
 use crate::utils::MathLog2;
+use itertools::Itertools;
 
 // use cidr::Cidr;
 use num_traits::{
@@ -71,11 +72,7 @@ impl<R: IpRange> Aggregator<R> for Vec<R> {
     }
 
     fn export(&self) -> String {
-        let mut output = String::new();
-        for range in self {
-            writeln!(output, "{}", range).unwrap();
-        }
-        output
+        self.iter().join("\n")
     }
 }
 
@@ -85,12 +82,9 @@ fn aggregated<R: IpRange>(mut ranges: Vec<R>) -> Vec<R> {
         return ranges;
     }
     ranges.sort();
-    let mut ranges_iter = ranges.into_iter().map(|range| {
-        (
-            range.first_address_as_decimal(),
-            range.length(),
-        )
-    });
+    let mut ranges_iter = ranges
+        .into_iter()
+        .map(|range| (range.first_address_as_decimal(), range.length()));
     let mut aggregate_ranges = Vec::<R>::new();
     let mut last_range = ranges_iter.next().unwrap();
     for range in ranges_iter {
@@ -128,7 +122,9 @@ fn reversed<R: IpRange>(ranges: Vec<R>) -> Vec<R> {
                 range.first_address_as_decimal() - last_decimal,
             )));
         }
-        last_decimal = range.first_address_as_decimal() + range.length();
+        last_decimal = range
+            .first_address_as_decimal()
+            .wrapping_add(&range.length());
     }
     if last_decimal != R::AddressDecimal::zero()
     /* R::AddressDecimal::max_value().wrapping_add(&R::AddressDecimal::one()) */
