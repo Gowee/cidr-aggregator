@@ -7,6 +7,7 @@ use num_traits::Zero;
 use crate::parser::parse_cidrs;
 use crate::aggregator::Aggregator;
 use crate::IpRange;
+use crate::utils::to_string_overflow;
 
 #[wasm_bindgen]
 extern "C" {
@@ -50,27 +51,17 @@ pub struct OutputTriple {
     pub address_count_after: String
 }
 
-pub fn _aggregated<R: IpRange>(mut ranges: Vec<R>, reversed: bool) -> OutputTriple {
-    ranges.aggregate();
+pub fn _aggregated<R: IpRange>(mut ranges: Vec<R>, reverse: bool) -> OutputTriple {
     let line_count_before = ranges.len();
-    let address_count_before = ranges.count_address().to_string();
-    if reversed {
+    ranges.aggregate();
+    let address_count_before = to_string_overflow(ranges.count_address(), !ranges.is_empty());
+    if reverse {
         ranges.reverse();
     }
     ranges.normalize();
 
     let line_count_after = ranges.len();
-    let address_count_after = ranges.count_address();
-    let address_count_after = if address_count_after == R::AddressDecimal::zero() && !ranges.is_empty() {
-        if mem::size_of::<R::AddressDecimal>() * 8== 32  {
-            String::from("4294967296")
-        }
-        else {
-            String::from("340282366920938463463374607431768211456")
-        }
-    } else {
-        address_count_after.to_string()
-    };
+    let address_count_after = to_string_overflow(ranges.count_address(), !ranges.is_empty());
 
     OutputTriple {
         ranges: ranges.export(),

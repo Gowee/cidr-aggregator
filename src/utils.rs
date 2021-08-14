@@ -1,4 +1,6 @@
 use num_traits::PrimInt;
+use std::fmt::Display;
+use std::mem;
 
 pub trait MathLog2 {
     // We follow the return type convention used in `.leading_zeros`.
@@ -22,17 +24,17 @@ impl<T: PrimInt> MathLog2 for T {
     }
 }
 
-// macro_rules! implement_log2 {
-//     ($int: ident) => {
-//         impl MathLog2 for $int {
-//             fn log2(self) -> u32 {
-//                 // https://users.rust-lang.org/t/logarithm-of-integers/8506/5
-//                 std::mem::size_of::<Self>() as u32 * 8 - self.leading_zeros() - 1
-//             }
-//         }
-//     };
-// }
-
-// implement_log2!(u8);
-// implement_log2!(u32);
-// implement_log2!(u128);
+#[allow(dead_code)]
+pub fn to_string_overflow<T: PrimInt + Display>(num: T, zero_as_overflow: bool) -> String {
+    if zero_as_overflow && num == T::zero() {
+        if mem::size_of::<T>() * 8 == 32 {
+            String::from("4294967296")
+        } else if mem::size_of::<T>() * 8 == 128 {
+            String::from("340282366920938463463374607431768211456")
+        } else {
+            unimplemented!()
+        }
+    } else {
+        num.to_string()
+    }
+}

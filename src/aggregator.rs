@@ -88,8 +88,7 @@ fn aggregated<R: IpRange>(mut ranges: Vec<R>) -> Vec<R> {
     let mut ranges_iter = ranges.into_iter().map(|range| {
         (
             range.first_address_as_decimal(),
-            range.length(), // pow(<R::AddressDecimal as NumCast>::from(2).unwrap(),
-                            // range.network_length() as usize)
+            range.length(),
         )
     });
     let mut aggregate_ranges = Vec::<R>::new();
@@ -162,7 +161,6 @@ fn normalized<R: IpRange>(ranges: Vec<R>) -> Vec<R> {
                     first.trailing_zeros()
                 },
             ));
-            // dbg!(first, length, b, R::from_cidr_pair_decimal((first, b)));
             normalize_ranges.push(R::from_cidr_pair_decimal((first, b)));
             length -= b;
             if length == R::AddressDecimal::zero() {
