@@ -152,7 +152,7 @@ fn normalized<R: IpRange>(ranges: Vec<R>) -> Vec<R> {
             let b = <R::AddressDecimal as NumCast>::from(2).unwrap().pow(min(
                 length.log2(),
                 if first == R::AddressDecimal::zero() {
-                    32
+                    (mem::size_of::<R::AddressDecimal>() * 8) as u32
                 } else {
                     first.trailing_zeros()
                 },
