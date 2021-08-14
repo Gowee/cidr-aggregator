@@ -106,41 +106,7 @@ function OutputStatus({ output, classes }: { output: any, classes: any }) {
           <b>{output?.v6?.line_SwapVertcount_after ?? 0}</b><abbr title="Lines">L</abbr> / <b>{(output?.v6?.address_count_after ?? "0")}</b>
         </Typography>
       </Grid>
-      {/* {invalid_count > 0 || true &&
-        <Grid item>
-          <Badge badgeContent={invalid_count} color="secondary" title={invalid_count + " lines are invalid"}>
-            <WarningIcon />
-          </Badge>
-          <Typography variant="caption" color="textSecondary" onClick={() => setShowInvalid(true)}>
-            Invalid Lines: {invalid_count}
-          </Typography>
-          <Modal
-            open={showInvalid}
-            onClose={() => setShowInvalid(false)}
-            aria-labelledby="invalid-lines-modal"
-            aria-describedby="invalid-lines-description"
-          >
-            <>
-              <Typography variant="h2" id="invalid-lines-modal">Invalid Lines</Typography>
-              <Typography variant="body1" id="invalid-lines-description">
-                Valid entries are in the form of <code>IP/CIDR</code> with trailing <code>/CIDR</code>optionally omited.
-              </Typography>
-              <TextField
-                label="Invalid"
-                value={output?.invalid}
-              />
-            </>
-          </Modal>
-        </Grid>
-      } */}
     </Grid>);
-  // <Typography variant="caption" color="textSecondary">
-  //   IPv4 Lines: {output?.v4?.line_count_before ?? 0} ➟ {output?.v4?.line_count_after ?? 0} |
-  //   IPv4 Addresses: {(output?.v4?.address_count_before ?? "0")} ➟ {(output?.v4?.address_count_after ?? "0")} |
-  //   IPv6 Lines: {output?.v6?.line_count_before ?? 0} ➟ {output?.v6?.line_count_after ?? 0} |
-  //   IPv6 Addresses: {(output?.v6?.address_count_before ?? "0")} ➟ {(output?.v6?.address_count_after ?? "0")} |
-  //   Invalid Lines: {count_lines(output?.invalid)}
-  // </Typography>);
 }
 
 function WarningFab({ className, invalidLines }: { className: string, invalidLines: string }) {
@@ -179,7 +145,7 @@ function WarningFab({ className, invalidLines }: { className: string, invalidLin
           horizontal: 'center',
         }}
       >
-        <Typography variant="h5">Invalid lines</Typography>
+        <Typography variant="h6">Invalid lines</Typography>
         <pre>
           <code>
             {invalidLines}
@@ -196,7 +162,7 @@ function App() {
   const [output, setOutput] = useState({} as any);
   const handleAggregate = async (reverse = false) => {
     const { aggregate } = await import('../../pkg/cidr_aggregator.js');
-    setOutput(await aggregate(input, { reverse, ipKind: "Both" }));
+    setOutput(await aggregate(input, reverse));
   };
   console.log(output);
   console.log((output?.V4?.ranges));
@@ -240,8 +206,6 @@ function App() {
                 <Button color="primary" onClick={() => handleAggregate(true)}>Reverse</Button>
               </ButtonGroup>
             </Grid>
-            {/* <Divider orientation="vertical" className={classes.optionsDivider} flexItem /> */}
-
             <Grid item>
               <FormGroup row>
                 <FormControlLabel
@@ -281,7 +245,6 @@ function App() {
       </main>
       <footer className={classes.footer}>
         <Grid container justifyContent="space-between">
-          {/* <Typography variant="body1"></Typography> */}
           <Grid item>
             <Typography variant="body2" color="textSecondary">
               <Link color="inherit" href="https://github.com/Gowee/cidr-aggregator">

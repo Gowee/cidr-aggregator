@@ -2,18 +2,9 @@ use std::fmt::{self, Debug, Display};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use std::str::FromStr;
 
-// use cidr::{Cidr, Ipv4Cidr, Ipv6Cidr};
 use num_traits::{Bounded, NumAssignOps, NumCast, PrimInt, WrappingAdd, Zero};
 
 use crate::utils::MathLog2;
-
-// #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
-// pub struct CIDRv4(Ipv4Addr, u8);
-
-// #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
-// pub struct CIDRv6(Ipv6Addr, u8);
-
-// trait CidrAggregator
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Ipv4Range(Ipv4Addr, u32);
@@ -109,7 +100,7 @@ macro_rules! impl_ip_range {
             }
 
             fn from_cidr_pair(first_address_and_cidr: (Self::Address, u8)) -> Self {
-                let length = if  first_address_and_cidr.1 == 0 {
+                let length = if first_address_and_cidr.1 == 0 {
                     0 // Self::AddressDecimal::max_value() + 1
                 } else {
                     <Self::AddressDecimal as NumCast>::from(2).unwrap().pow(
@@ -117,10 +108,7 @@ macro_rules! impl_ip_range {
                             - first_address_and_cidr.1 as u32,
                     )
                 };
-                Self(
-                    first_address_and_cidr.0,
-                    length,
-                )
+                Self(first_address_and_cidr.0, length)
             }
 
             fn into_cidr_pair(self) -> (Self::Address, u8) {
@@ -141,7 +129,7 @@ macro_rules! impl_ip_range {
             }
 
             // fn format_cidr(&self) -> fmt::Arguments {
-            //     let cidr: u32 = self.1.checked_log2().expect("Range not normalized yet");
+            //     let cidr: u32 = self.1.checked_log2().expect("Range not normalize yet");
             //     let a = 1;
             //     format_args!("{}/{}", a, a)
             // }
@@ -157,7 +145,7 @@ macro_rules! impl_ip_range {
             fn from(range: $ip_range) -> ($address_type, u8) {
                 (
                     range.0,
-                    range.1.checked_log2().expect("Range not normalized yet") as u8,
+                    range.1.checked_log2().expect("Range not normalize yet") as u8,
                 )
             }
         }
@@ -182,7 +170,7 @@ macro_rules! impl_ip_range {
                     0
                 } else {
                     std::mem::size_of::<$decimal_type>() as u32 * 8
-                        - self.1.checked_log2().expect("Range not normalized yet")
+                        - self.1.checked_log2().expect("Range not normalize yet")
                 };
                 write!(f, "{}/{}", self.0, cidr)
             }
@@ -192,64 +180,6 @@ macro_rules! impl_ip_range {
 
 impl_ip_range!(Ipv4Range, Ipv4Addr, u32);
 impl_ip_range!(Ipv6Range, Ipv6Addr, u128);
-
-// trait CidrExt: Cidr {
-//     type AddressDecimal: PrimInt + NumAssignOps + Bounded;
-
-//     fn first_address_as_decimal(&self) -> Self::AddressDecimal;
-// }
-
-// impl CidrExt for Ipv4Cidr {
-//     type AddressDecimal = u32;
-// }
-
-// impl CidrExt for Ipv6Cidr {
-//     type AddressDecimal = u128;
-// }
-
-// macro_rules! impl_cidr_ext {
-//     ($cidr: ident, $decimal_type: ident) => {
-//         impl CidrExt for $cidr {
-//             type AddressDecimal = $decimal_type;
-
-//             fn first_address_as_decimal(&self) -> Self::AddressDecimal {
-//                 self.first_address().into()
-//             }
-//         }
-//     };
-// }
-
-// impl_cidr_ext!(Ipv4Cidr, u32);
-// impl_cidr_ext!(Ipv6Cidr, u128);
-
-// #[derive(Debug, Clone)]
-// pub struct Ipv4Ranges(Vec<Ipv4Cidr>);
-
-// #[derive(Debug, Clone)]
-// pub struct Ipv6Ranges(Vec<Ipv4Cidr>);
-
-// // impl Display for CIDRv4 {
-// //     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result{
-// //         write!(f, "{}/{}", self.0, 32 - self.1.log2())
-// //     }
-// // }
-// // impl Display for CIDRv6 {
-// //     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result{
-// //         write!(f, "{}/{}", self.0, 32 - self.1.log2())
-// //     }
-// // }
-
-// trait CIDR {
-//     type AddrType;
-// }
-
-// impl CIDR for CIDRv4 {
-//     type AddrType = Ipv4Addr;
-// }
-
-// impl CIDR for CIDRv6 {
-//     type AddrType = Ipv6Addr;
-// }
 
 pub mod aggregator;
 pub mod parser;

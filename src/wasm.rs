@@ -4,7 +4,7 @@ use wasm_bindgen::prelude::*;
 use serde::{Serialize, Deserialize};
 use num_traits::Zero;
 
-use crate::parser::{parse_cidrs, export};
+use crate::parser::parse_cidrs;
 use crate::aggregator::Aggregator;
 use crate::IpRange;
 
@@ -32,29 +32,6 @@ macro_rules! console_log {
     ($($t:tt)*) => (log(&format_args!($($t)*).to_string()))
 }
 
-// There appears to be a bug around. If we have wasm_bindgen enabled with numeric wasm_bindgen, and
-// pass in IpKind.VARIANT defined in generated .d.ts, serde will return an error.
-// #[wasm_bindgen]
-
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub enum IpKind {
-    V4,
-    V6,
-    Both
-}
-
-impl Default for IpKind {
-    fn default() -> Self {
-        IpKind::Both
-    }
-}
-
-#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
-pub struct Options {
-    pub reverse: bool,
-    pub ipKind: IpKind, 
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Output {
     pub v4: OutputTriple,
@@ -73,14 +50,14 @@ pub struct OutputTriple {
     pub address_count_after: String
 }
 
-pub fn _aggregate<R: IpRange>(mut ranges: Vec<R>, reverse: bool) -> OutputTriple {
-    ranges.aggregated();
+pub fn _aggregated<R: IpRange>(mut ranges: Vec<R>, reversed: bool) -> OutputTriple {
+    ranges.aggregate();
     let line_count_before = ranges.len();
     let address_count_before = ranges.count_address().to_string();
-    if reverse {
-        ranges.reversed();
+    if reversed {
+        ranges.reverse();
     }
-    ranges.normalized();
+    ranges.normalize();
 
     let line_count_after = ranges.len();
     let address_count_after = ranges.count_address();
@@ -96,7 +73,7 @@ pub fn _aggregate<R: IpRange>(mut ranges: Vec<R>, reverse: bool) -> OutputTriple
     };
 
     OutputTriple {
-        ranges: export(&ranges),
+        ranges: ranges.export(),
         line_count_before,
         line_count_after,
         address_count_before,
@@ -105,12 +82,11 @@ pub fn _aggregate<R: IpRange>(mut ranges: Vec<R>, reverse: bool) -> OutputTriple
 }
 
 #[wasm_bindgen]
-pub fn aggregate(cidrs: &str, options: &JsValue) -> JsValue {
-    let (mut v4ranges, mut v6ranges, invalid_entries) = parse_cidrs(cidrs);
-    let options: Options = JsValue::into_serde(options).unwrap_or_default();
+pub fn aggregate(cidrs: &str, reverse: bool) -> JsValue {
+    let (v4ranges, v6ranges, invalid_entries) = parse_cidrs(cidrs);
     JsValue::from_serde( &Output {
-        v4: _aggregate(v4ranges, options.reverse),
-        v6: _aggregate(v6ranges, options.reverse),
+        v4: _aggregated(v4ranges, reverse),
+        v6: _aggregated(v6ranges, reverse),
         invalid: invalid_entries.join("\n")
-    }).expect("@2222222222")
+    }).unwrap()
 } 
