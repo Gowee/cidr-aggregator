@@ -1,4 +1,4 @@
-import React, { useState, useMemo, MouseEvent } from 'react';
+import React, { useState, useMemo, MouseEvent, useRef } from 'react';
 import CssBaseline from '@material-ui/core/CssBaseline';
 import Typography from '@material-ui/core/Typography';
 import { makeStyles } from '@material-ui/core/styles';
@@ -86,10 +86,8 @@ const useStyles = makeStyles((theme) => ({
   // },
 }));
 
-function OutputStatus({ output, classes }: { output: any, classes: any }) {
-  console.log(output);
+function OutputStatus({ output }: { output: any, classes: any }) {
   let [showInvalid, setShowInvalid] = useState(false);
-  const invalid_count = useMemo(() => count_lines(output?.invalid), [output?.invalid]);
   return (
     <Grid container direction="row" justifyContent="space-between">
       <Grid item>
@@ -110,7 +108,7 @@ function OutputStatus({ output, classes }: { output: any, classes: any }) {
 }
 
 function WarningFab({ className, invalidLines }: { className: string, invalidLines: string }) {
-  const invalid_count = useMemo(() => count_lines(invalidLines), [invalidLines]);
+  const invalidCount = useMemo(() => count_lines(invalidLines), [invalidLines]);
 
   const [anchorEl, setAnchorEl] = React.useState(null as any);
   const handleOpen = (event: MouseEvent) => {
@@ -122,11 +120,11 @@ function WarningFab({ className, invalidLines }: { className: string, invalidLin
   const open = Boolean(anchorEl);
   const id = open ? 'invalid-lines-popover' : undefined;
 
-  return invalid_count > 0 ? (
+  return invalidCount > 0 ? (
     <>
-      <Tooltip title={invalid_count + " invalid lines"}>
+      <Tooltip title={invalidCount + " invalid lines"}>
         <Fab size="small" className={className} aria-label="Show warnings" onClick={handleOpen}>
-          <Badge badgeContent={invalid_count} color="secondary">
+          <Badge badgeContent={invalidCount} color="secondary">
             <WarningIcon />
           </Badge>
         </Fab>
@@ -145,12 +143,14 @@ function WarningFab({ className, invalidLines }: { className: string, invalidLin
           horizontal: 'center',
         }}
       >
-        <Typography variant="h6">Invalid lines</Typography>
-        <pre>
-          <code>
-            {invalidLines}
-          </code>
-        </pre>
+        <Paper elevation={1}>
+          <Typography variant="h6">Invalid lines</Typography>
+          <pre>
+            <code>
+              {invalidLines}
+            </code>
+          </pre>
+        </Paper>
       </Popover>
     </>
   ) : (<></>);
@@ -158,14 +158,35 @@ function WarningFab({ className, invalidLines }: { className: string, invalidLin
 
 function App() {
   const classes = useStyles();
+  const controlRef = useRef(null as any);
   const [input, setInput] = useState("");
   const [output, setOutput] = useState({} as any);
+  const [ipKind, setIpKind] = useState("both");
   const handleAggregate = async (reverse = false) => {
     const { aggregate } = await import('../../pkg/cidr_aggregator.js');
     setOutput(await aggregate(input, reverse));
+    controlRef && controlRef.current && controlRef.current.scrollIntoView({ behavior: "smooth" });
   };
-  console.log(output);
-  console.log((output?.V4?.ranges));
+  const toggleIpv4 = () => {
+    setIpKind((prev) => {
+      if (prev === "both" || prev === "ipv4") {
+        return "ipv6";
+      } else /* ipv6 */ {
+        return "both";
+      }
+    })
+  };
+
+  const toggleIpv6 = () => {
+    setIpKind((prev) => {
+      if (prev === "both" || prev === "ipv6") {
+        return "ipv4";
+      } else /* ipv4 */ {
+        return "both";
+      }
+    })
+  };
+
   return (
     // <Box display="flex">
     <Container component="main" className={classes.main} maxWidth="md">
@@ -197,6 +218,7 @@ function App() {
         <Paper elevation={1} className={classes.optionsWrapper}>
           <Grid
             container
+            ref={controlRef}
             direction="row"
             justifyContent="space-around"
           >
@@ -209,16 +231,21 @@ function App() {
             <Grid item>
               <FormGroup row>
                 <FormControlLabel
-                  control={<Switch /*checked={state.checkedA} onChange={handleChange}*/ name="checkedA" checked />}
+                  control={
+                    <Switch
+                      checked={ipKind !== "ipv6"}
+                      onChange={toggleIpv4}
+                      name="checkedA"
+                    />
+                  }
                   label="IPv4"
                 />
                 <FormControlLabel
                   control={
                     <Switch
-                      // checked={state.checkedB}
-                      // onChange={handleChange}
+                      checked={ipKind !== "ipv4"}
+                      onChange={toggleIpv6}
                       name="checkedB"
-                      checked
                     />
                   }
                   label="IPv6"
@@ -235,7 +262,7 @@ function App() {
             multiline
             fullWidth
             rows={16}
-            value={[output?.v4?.ranges, output?.v6?.ranges].filter((v) => v).join("\n")}
+            value={[ipKind !== "ipv6" && output?.v4?.ranges, ipKind !== "ipv4" && output?.v6?.ranges].filter((v) => v).join("\n")}
           />
           <Box className={classes.editorStatus}>
             <OutputStatus output={output} classes={classes} />
