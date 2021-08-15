@@ -2,8 +2,8 @@ use std::fmt::{self, Debug, Display};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use std::str::FromStr;
 
+use crate::utils::{ip_addr_to_bit_length, ip_addr_trailing_zeros, MathLog2};
 use num_traits::{Bounded, NumAssignOps, NumCast, PrimInt, WrappingAdd, Zero};
-use crate::utils::{MathLog2,ip_addr_to_bit_length,ip_addr_trailing_zeros};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Ipv4Range(Ipv4Addr, u32);
@@ -54,8 +54,10 @@ impl FromStr for EitherIpRange {
             } else {
                 cidr.parse::<u8>().map_err(|_| ())?
             };
-            if ip_addr_trailing_zeros(ip)  < ip_addr_to_bit_length(ip) - cidr as u32 {
-                return Err(()) // a host instead of a range
+            if cidr as u32 > ip_addr_to_bit_length(ip)
+                || ip_addr_trailing_zeros(ip) < ip_addr_to_bit_length(ip) - cidr as u32
+            {
+                return Err(()); // a host instead of a range
             }
             Ok(match ip {
                 IpAddr::V4(ip) => EitherIpRange::V4(Ipv4Range::from_cidr_pair((ip, cidr))),
