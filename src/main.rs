@@ -1,5 +1,4 @@
-use std::io::{self, BufRead, Read, Write};
-use std::path::PathBuf;
+use std::io::{self, Read};
 
 use structopt::StructOpt;
 

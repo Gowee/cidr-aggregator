@@ -1,18 +1,14 @@
 use std::{
-    array,
     cmp::{max, min},
-    fmt::Write,
     mem,
 };
 
-use super::IpRange;
-use crate::utils::MathLog2;
 use itertools::Itertools;
 
+use crate::{utils::MathLog2, IpRange};
+
 // use cidr::Cidr;
-use num_traits::{
-    pow, Bounded, FromPrimitive, NumAssignOps, NumCast, NumOps, One, PrimInt, WrappingAdd, Zero,
-};
+use num_traits::{Bounded, NumCast, One, PrimInt, WrappingAdd, Zero};
 
 pub trait Aggregator<R: IpRange> {
     fn aggregated(self) -> Vec<R>;

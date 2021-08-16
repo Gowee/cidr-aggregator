@@ -1,8 +1,5 @@
-use std::mem;
-
 use wasm_bindgen::prelude::*;
 use serde::{Serialize, Deserialize};
-use num_traits::Zero;
 
 use crate::parser::parse_cidrs;
 use crate::aggregator::Aggregator;
@@ -27,6 +24,7 @@ extern "C" {
     fn log_many(a: &str, b: &str);
 }
 
+#[allow(unused_macros)]
 macro_rules! console_log {
     // Note that this is using the `log` function imported above during
     // `bare_bones`
