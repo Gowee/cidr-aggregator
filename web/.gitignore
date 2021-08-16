@@ -23,5 +23,7 @@ yarn-debug.log*
 yarn-error.log*
 
 
+/.vscode
+
 # ../pkg is used instead
 /pkg
