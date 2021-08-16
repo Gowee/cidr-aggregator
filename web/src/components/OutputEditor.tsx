@@ -1,5 +1,4 @@
 import Box from "@material-ui/core/Box";
-// import Paper from "@material-ui/core/Paper";
 import TextField from "@material-ui/core/TextField";
 
 import { useEditorStyles } from "./editorCommon";
@@ -17,6 +16,8 @@ export default function OutputEditor({
 
   return (
     <Box position="relative">
+      {" "}
+      {/* for Fab positioning */}
       <TextField
         id="input"
         label="Output"

@@ -5,9 +5,6 @@ import Container from "@material-ui/core/Container";
 import Paper from "@material-ui/core/Paper";
 import Box from "@material-ui/core/Box";
 
-// import logo from './logo.svg';
-// import './App.css';
-
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import InputEditor from "./components/InputEditor";
@@ -28,7 +25,6 @@ const useStyles = makeStyles((theme) => ({
     marginTop: theme.spacing(2),
     marginBottom: theme.spacing(2),
     padding: theme.spacing(2),
-    position: "relative", // for Fab positioning
   },
   optionsControlWrapper: {
     marginTop: theme.spacing(-1),
@@ -45,7 +41,6 @@ const useStyles = makeStyles((theme) => ({
   sectionWrapper: {
     marginTop: theme.spacing(1),
     marginBottom: theme.spacing(1),
-    // padding: theme.spacing(2),
   },
   // footer: {
   //   padding: theme.spacing(3, 2),
@@ -87,7 +82,6 @@ function App() {
   };
 
   return (
-    // <Box display="flex">
     <Container component="main" className={classes.main} maxWidth="md">
       <CssBaseline />
       <Header />
