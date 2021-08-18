@@ -6,10 +6,10 @@ use crate::utils::{ip_addr_to_bit_length, ip_addr_trailing_zeros, MathLog2};
 use num_traits::{Bounded, NumAssignOps, NumCast, PrimInt, WrappingAdd, Zero};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Ipv4Range(Ipv4Addr, u32);
+pub struct Ipv4Range(u32, u32); // [start, end] inclusively
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Ipv6Range(Ipv6Addr, u128);
+pub struct Ipv6Range(u128, u128);
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum EitherIpRange {
@@ -59,6 +59,7 @@ impl FromStr for EitherIpRange {
             {
                 return Err(()); // a host instead of a range
             }
+            dbg!(ip, cidr);
             Ok(match ip {
                 IpAddr::V4(ip) => EitherIpRange::V4(Ipv4Range::from_cidr_pair((ip, cidr))),
                 IpAddr::V6(ip) => EitherIpRange::V6(Ipv6Range::from_cidr_pair((ip, cidr))),
@@ -75,16 +76,21 @@ pub trait IpRange: Copy + Clone + Eq + Ord + Display + Debug {
 
     fn first_address(&self) -> Self::Address;
     fn first_address_as_decimal(&self) -> Self::AddressDecimal;
+    fn last_address(&self) -> Self::Address;
+    fn last_address_as_decimal(&self) -> Self::AddressDecimal;
     fn length(&self) -> Self::AddressDecimal;
     fn from_cidr_pair(first_address_and_cidr: (Self::Address, u8)) -> Self;
     fn into_cidr_pair(self) -> (Self::Address, u8);
     fn from_cidr_pair_decimal(
-        first_address_decimal_and_length: (Self::AddressDecimal, Self::AddressDecimal),
+        first_and_last_address_decimal: (Self::AddressDecimal, Self::AddressDecimal),
     ) -> Self;
     fn into_cidr_pair_decimal(self) -> (Self::AddressDecimal, Self::AddressDecimal);
     fn full() -> Self {
-        // 0, 0 indicates 0.0.0.0/0 because Self::AddressDecimal::max_value() + 1 == 0
-        Self::from_cidr_pair_decimal((Self::AddressDecimal::zero(), Self::AddressDecimal::zero()))
+        // inclusive interval
+        Self::from_cidr_pair_decimal((
+            Self::AddressDecimal::zero(),
+            Self::AddressDecimal::max_value(),
+        ))
     }
     // fn format_cidr(&self) -> fmt::Arguments;
 }
@@ -96,27 +102,38 @@ macro_rules! impl_ip_range {
             type AddressDecimal = $decimal_type;
 
             fn first_address(&self) -> Self::Address {
-                self.0
-            }
-
-            fn first_address_as_decimal(&self) -> Self::AddressDecimal {
                 self.0.into()
             }
 
-            fn length(&self) -> Self::AddressDecimal {
+            fn first_address_as_decimal(&self) -> Self::AddressDecimal {
+                self.0
+            }
+
+            fn last_address(&self) -> Self::Address {
+                self.1.into()
+            }
+
+            fn last_address_as_decimal(&self) -> Self::AddressDecimal {
                 self.1
             }
 
+            fn length(&self) -> Self::AddressDecimal {
+                (self.1 - self.0).wrapping_add(1 as $decimal_type)
+            }
+
             fn from_cidr_pair(first_address_and_cidr: (Self::Address, u8)) -> Self {
-                let length = if first_address_and_cidr.1 == 0 {
-                    0 // Self::AddressDecimal::max_value() + 1
+                let first: $decimal_type = first_address_and_cidr.0.into();
+                let last = if first_address_and_cidr.1 == 0 {
+                    Self::AddressDecimal::max_value()
                 } else {
-                    <Self::AddressDecimal as NumCast>::from(2).unwrap().pow(
-                        std::mem::size_of::<$address_type>() as u32 * 8
-                            - first_address_and_cidr.1 as u32,
-                    )
+                    first
+                        + (<Self::AddressDecimal as NumCast>::from(2).unwrap().pow(
+                            std::mem::size_of::<$address_type>() as u32 * 8
+                                - first_address_and_cidr.1 as u32,
+                        ) - 1)
                 };
-                Self(first_address_and_cidr.0, length)
+                dbg!(first, last);
+                Self(first, last)
             }
 
             fn into_cidr_pair(self) -> (Self::Address, u8) {
@@ -124,11 +141,11 @@ macro_rules! impl_ip_range {
             }
 
             fn from_cidr_pair_decimal(
-                first_address_decimal_and_length: (Self::AddressDecimal, Self::AddressDecimal),
+                first_and_last_address_decimal: (Self::AddressDecimal, Self::AddressDecimal),
             ) -> Self {
                 Self(
-                    Self::Address::from(first_address_decimal_and_length.0),
-                    first_address_decimal_and_length.1,
+                    first_and_last_address_decimal.0,
+                    first_and_last_address_decimal.1,
                 )
             }
 
@@ -152,15 +169,17 @@ macro_rules! impl_ip_range {
         impl From<$ip_range> for ($address_type, u8) {
             fn from(range: $ip_range) -> ($address_type, u8) {
                 (
-                    range.0,
-                    range.1.checked_log2().expect("Range not normalize yet") as u8,
+                    $address_type::from(range.0),
+                    (range.1 - range.0 + 1)
+                        .checked_log2()
+                        .expect("Range not normalize yet") as u8,
                 )
             }
         }
 
         impl From<($decimal_type, $decimal_type)> for $ip_range {
-            fn from(first_address_decimal_and_length: ($decimal_type, $decimal_type)) -> $ip_range {
-                Self::from_cidr_pair_decimal(first_address_decimal_and_length)
+            fn from(first_and_last_address_decimal: ($decimal_type, $decimal_type)) -> $ip_range {
+                Self::from_cidr_pair_decimal(first_and_last_address_decimal)
             }
         }
 
@@ -177,10 +196,14 @@ macro_rules! impl_ip_range {
                 {
                     0
                 } else {
+                    dbg!(self.length());
                     std::mem::size_of::<$decimal_type>() as u32 * 8
-                        - self.1.checked_log2().expect("Range not normalize yet")
+                        - self
+                            .length()
+                            .checked_log2()
+                            .expect("Range not normalize yet")
                 };
-                write!(f, "{}/{}", self.0, cidr)
+                write!(f, "{}/{}", self.first_address(), cidr)
             }
         }
     };

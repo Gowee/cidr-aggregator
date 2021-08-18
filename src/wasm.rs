@@ -1,10 +1,10 @@
+use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
-use serde::{Serialize, Deserialize};
 
-use crate::parser::parse_cidrs;
 use crate::aggregator::Aggregator;
-use crate::IpRange;
+use crate::parser::parse_cidrs;
 use crate::utils::to_string_overflow;
+use crate::IpRange;
 
 #[wasm_bindgen]
 extern "C" {
@@ -35,7 +35,7 @@ macro_rules! console_log {
 pub struct Output {
     pub v4: OutputTriple,
     pub v6: OutputTriple,
-    pub invalid: String
+    pub invalid: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -46,17 +46,21 @@ pub struct OutputTriple {
     pub line_count_before: usize,
     pub line_count_after: usize,
     pub address_count_before: String,
-    pub address_count_after: String
+    pub address_count_after: String,
 }
 
 pub fn _aggregated<R: IpRange>(mut ranges: Vec<R>, reverse: bool) -> OutputTriple {
     let line_count_before = ranges.len();
+    console_log!("{:?}", ranges);
     ranges.aggregate();
+    console_log!("{:?}", ranges);
     let address_count_before = to_string_overflow(ranges.count_address(), !ranges.is_empty());
     if reverse {
         ranges.reverse();
     }
+    console_log!("{:?}", ranges);
     ranges.normalize();
+    console_log!("{:?}", ranges);
 
     let line_count_after = ranges.len();
     let address_count_after = to_string_overflow(ranges.count_address(), !ranges.is_empty());
@@ -73,9 +77,10 @@ pub fn _aggregated<R: IpRange>(mut ranges: Vec<R>, reverse: bool) -> OutputTripl
 #[wasm_bindgen]
 pub fn aggregate(cidrs: &str, reverse: bool) -> JsValue {
     let (v4ranges, v6ranges, invalid_entries) = parse_cidrs(cidrs);
-    JsValue::from_serde( &Output {
+    JsValue::from_serde(&Output {
         v4: _aggregated(v4ranges, reverse),
         v6: _aggregated(v6ranges, reverse),
-        invalid: invalid_entries.join("\n")
-    }).unwrap()
-} 
+        invalid: invalid_entries.join("\n"),
+    })
+    .unwrap()
+}
