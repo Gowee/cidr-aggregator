@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import CssBaseline from "@material-ui/core/CssBaseline";
 import { makeStyles } from "@material-ui/core/styles";
 import Container from "@material-ui/core/Container";
@@ -56,6 +56,9 @@ function App() {
   const [input, setInput] = useState("");
   const [output, setOutput] = useState({} as any);
   const [ipKind, setIpKind] = useState("both");
+  const [bogonFilter, setBogonFilter] = useState(
+    undefined as "reserved" | undefined
+  );
   const toggleIpv4 = () => {
     setIpKind((prev) => {
       if (prev === "both" || prev === "ipv4") {
@@ -74,12 +77,29 @@ function App() {
       }
     });
   };
+  const toggleReservedFilter = () => {
+    setBogonFilter((prev) => {
+      if (bogonFilter === "reserved") {
+        return undefined;
+      } else {
+        return "reserved";
+      }
+    });
+  };
   const handleAggregate = async (reverse = false) => {
     const { aggregate } = await import("../../pkg/cidr_aggregator.js");
-    setOutput(await aggregate(input, reverse));
+    setOutput(
+      Object.assign(
+        { reverse },
+        await aggregate(input, reverse, bogonFilter === "reserved")
+      )
+    );
     controlRef?.current &&
       controlRef.current.scrollIntoView({ behavior: "smooth" });
   };
+  useEffect(() => {
+    handleAggregate();
+  }, [bogonFilter]);
 
   return (
     <Container component="main" className={classes.main} maxWidth="md">
@@ -105,6 +125,8 @@ function App() {
               ipKind={ipKind}
               toggleIpv4={toggleIpv4}
               toggleIpv6={toggleIpv6}
+              bogonFilter={bogonFilter}
+              toggleReservedFilter={toggleReservedFilter}
               handleAggregate={handleAggregate}
               ref={controlRef}
             />

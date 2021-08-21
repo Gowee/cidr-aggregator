@@ -4,6 +4,7 @@ use structopt::StructOpt;
 
 use ::cidr_aggregator::aggregator::Aggregator;
 use ::cidr_aggregator::parser::parse_cidrs;
+use ::cidr_aggregator::{EitherIpRange, IpRange, Ipv4Range, Ipv6Range};
 // use crate::*;
 
 #[derive(StructOpt, Debug)]
@@ -20,6 +21,10 @@ struct Opt {
     /// Reverse ranges
     #[structopt(short, long)]
     reverse: bool,
+
+    /// Filter out all reserved IPs for special purposes (RFC 5735 and RFC 6890), incl. private IPs
+    #[structopt(short = "x", long)]
+    exclude_reserved: bool,
 
     /// Ignore unrecognized lines; by default, it rejects with error
     #[structopt(short = "i", long)]
@@ -39,13 +44,31 @@ fn main() -> io::Result<()> {
 
     v4ranges.aggregate();
     v6ranges.aggregate();
+    // dbg!(&v4ranges.len());
     if opt.reverse {
         v4ranges.reverse();
         v6ranges.reverse();
     }
+    // dbg!(&v4ranges);
+    // v4ranges.difference(&[
+    //     "10.0.0.0/8"
+    //         .parse::<EitherIpRange>()
+    //         .unwrap()
+    //         .into_v4()
+    //         .unwrap(),
+    //     "192.168.0.0/16"
+    //         .parse::<EitherIpRange>()
+    //         .unwrap()
+    //         .into_v4()
+    //         .unwrap(),
+    // ]);
+    if opt.exclude_reserved {
+        v4ranges.difference(Ipv4Range::reserved());
+        v6ranges.difference(Ipv6Range::reserved());
+    }
+    // dbg!(&v4ranges);
     v4ranges.normalize();
     v6ranges.normalize();
-
     if !opt.ignore_invalid && !invalid_entries.is_empty() {
         eprintln!("The following lines are not valid CIDRs, IPs or \"#\"-prefixed comments:\n");
         for entry in invalid_entries.iter() {

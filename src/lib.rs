@@ -2,7 +2,9 @@ use std::fmt::{self, Debug, Display};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use std::str::FromStr;
 
-use crate::utils::{ip_addr_to_bit_length, ip_addr_trailing_zeros, MathLog2};
+use crate::utils::{
+    ip_addr_to_bit_length, ip_addr_trailing_zeros, MathLog2, IPV4_RESERVED, IPV6_RESERVED,
+};
 use num_traits::{Bounded, NumAssignOps, NumCast, PrimInt, WrappingAdd, Zero};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -45,6 +47,7 @@ impl FromStr for EitherIpRange {
     type Err = ();
 
     fn from_str(s: &str) -> Result<EitherIpRange, Self::Err> {
+        dbg!(s);
         if let Some((ip, cidr)) = s.split_once("/").or(Some((s, "")))
         // .and_then(|(ip, cidr)| Some((ip.parse::<IpAddr>().ok()?, cidr.parse::<u8>().ok()?)))
         {
@@ -59,7 +62,7 @@ impl FromStr for EitherIpRange {
             {
                 return Err(()); // a host instead of a range
             }
-            dbg!(ip, cidr);
+            // dbg!(ip, cidr);
             Ok(match ip {
                 IpAddr::V4(ip) => EitherIpRange::V4(Ipv4Range::from_cidr_pair((ip, cidr))),
                 IpAddr::V6(ip) => EitherIpRange::V6(Ipv6Range::from_cidr_pair((ip, cidr))),
@@ -70,7 +73,7 @@ impl FromStr for EitherIpRange {
     }
 }
 
-pub trait IpRange: Copy + Clone + Eq + Ord + Display + Debug {
+pub trait IpRange: Copy + Clone + Eq + Ord + Display + Debug + 'static {
     type Address; // TODO: how to associate Address with AddressDecimal somehow?
     type AddressDecimal: PrimInt + NumAssignOps + WrappingAdd + Bounded + Display + Debug;
 
@@ -92,11 +95,12 @@ pub trait IpRange: Copy + Clone + Eq + Ord + Display + Debug {
             Self::AddressDecimal::max_value(),
         ))
     }
+    fn reserved() -> &'static [Self];
     // fn format_cidr(&self) -> fmt::Arguments;
 }
 
 macro_rules! impl_ip_range {
-    ($ip_range: ident, $address_type: ident, $decimal_type: ident) => {
+    ($ip_range: ident, $address_type: ident, $decimal_type: ident, $reserved: ident) => {
         impl IpRange for $ip_range {
             type Address = $address_type;
             type AddressDecimal = $decimal_type;
@@ -132,7 +136,7 @@ macro_rules! impl_ip_range {
                                 - first_address_and_cidr.1 as u32,
                         ) - 1)
                 };
-                dbg!(first, last);
+                // dbg!(first, last);
                 Self(first, last)
             }
 
@@ -143,6 +147,7 @@ macro_rules! impl_ip_range {
             fn from_cidr_pair_decimal(
                 first_and_last_address_decimal: (Self::AddressDecimal, Self::AddressDecimal),
             ) -> Self {
+                assert!(first_and_last_address_decimal.0 <= first_and_last_address_decimal.1);
                 Self(
                     first_and_last_address_decimal.0,
                     first_and_last_address_decimal.1,
@@ -151,6 +156,10 @@ macro_rules! impl_ip_range {
 
             fn into_cidr_pair_decimal(self) -> (Self::AddressDecimal, Self::AddressDecimal) {
                 self.into()
+            }
+
+            fn reserved() -> &'static [Self] {
+                &$reserved[..]
             }
 
             // fn format_cidr(&self) -> fmt::Arguments {
@@ -196,7 +205,7 @@ macro_rules! impl_ip_range {
                 {
                     0
                 } else {
-                    dbg!(self.length());
+                    // dbg!(self.length());
                     std::mem::size_of::<$decimal_type>() as u32 * 8
                         - self
                             .length()
@@ -209,8 +218,8 @@ macro_rules! impl_ip_range {
     };
 }
 
-impl_ip_range!(Ipv4Range, Ipv4Addr, u32);
-impl_ip_range!(Ipv6Range, Ipv6Addr, u128);
+impl_ip_range!(Ipv4Range, Ipv4Addr, u32, IPV4_RESERVED);
+impl_ip_range!(Ipv6Range, Ipv6Addr, u128, IPV6_RESERVED);
 
 pub mod aggregator;
 pub mod parser;

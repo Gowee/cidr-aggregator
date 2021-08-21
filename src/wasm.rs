@@ -49,7 +49,7 @@ pub struct OutputTriple {
     pub address_count_after: String,
 }
 
-pub fn _aggregated<R: IpRange>(mut ranges: Vec<R>, reverse: bool) -> OutputTriple {
+pub fn _aggregated<R: IpRange>(mut ranges: Vec<R>, reverse: bool, exclude_reserved:bool) -> OutputTriple {
     let line_count_before = ranges.len();
     console_log!("{:?}", ranges);
     ranges.aggregate();
@@ -57,6 +57,9 @@ pub fn _aggregated<R: IpRange>(mut ranges: Vec<R>, reverse: bool) -> OutputTripl
     let address_count_before = to_string_overflow(ranges.count_address(), !ranges.is_empty());
     if reverse {
         ranges.reverse();
+    }
+    if exclude_reserved {
+        ranges.difference(R::reserved())
     }
     console_log!("{:?}", ranges);
     ranges.normalize();
@@ -75,11 +78,11 @@ pub fn _aggregated<R: IpRange>(mut ranges: Vec<R>, reverse: bool) -> OutputTripl
 }
 
 #[wasm_bindgen]
-pub fn aggregate(cidrs: &str, reverse: bool) -> JsValue {
+pub fn aggregate(cidrs: &str, reverse: bool, exclude_reserved: bool) -> JsValue {
     let (v4ranges, v6ranges, invalid_entries) = parse_cidrs(cidrs);
     JsValue::from_serde(&Output {
-        v4: _aggregated(v4ranges, reverse),
-        v6: _aggregated(v6ranges, reverse),
+        v4: _aggregated(v4ranges, reverse, exclude_reserved),
+        v6: _aggregated(v6ranges, reverse, exclude_reserved),
         invalid: invalid_entries.join("\n"),
     })
     .unwrap()
