@@ -18,6 +18,7 @@ export default function OutputEditor({
     <Box position="relative">
       {" "}
       {/* for Fab positioning */}
+      {/* TODO: nowrap */}
       <TextField
         id="input"
         label="Output"
@@ -25,6 +26,7 @@ export default function OutputEditor({
         multiline
         fullWidth
         rows={16}
+        inputProps={{ wrap: "soft" }}
         value={[
           ipKind !== "ipv6" && output?.v4?.ranges,
           ipKind !== "ipv4" && output?.v6?.ranges,

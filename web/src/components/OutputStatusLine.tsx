@@ -4,7 +4,7 @@ import Typography from "@material-ui/core/Typography";
 function Partial({ name, status }: { name: string; status: any }) {
   return (
     <Typography variant="caption" color="textSecondary">
-      {name}: {status?.line_count_before ?? 0} <abbr title="Lines">L</abbr>/{" "}
+      {name}: {status?.line_count_before ?? 0} <abbr title="Lines">L</abbr> /{" "}
       {status?.address_count_before ?? "0"}
       &nbsp;&nbsp;➟&nbsp;&nbsp;
       <b>{status?.line_count_after ?? 0}</b>

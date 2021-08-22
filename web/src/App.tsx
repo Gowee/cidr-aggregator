@@ -98,7 +98,8 @@ function App() {
       controlRef.current.scrollIntoView({ behavior: "smooth" });
   };
   useEffect(() => {
-    handleAggregate();
+    input && handleAggregate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bogonFilter]);
 
   return (

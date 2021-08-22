@@ -24,7 +24,9 @@ export default function InputEditor({
         placeholder="6.6.6.0/24"
         multiline
         fullWidth
+        autoFocus
         rows={16}
+        inputProps={{ wrap: "soft" }}
         value={input}
         onChange={(event) => setInput(event.target.value)}
       />
