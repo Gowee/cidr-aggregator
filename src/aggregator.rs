@@ -53,8 +53,6 @@ impl<R: IpRange> Aggregator<R> for Vec<R> {
         normalized(self)
     }
 
-    // fn with_discarded(self, ranges: &[IpRange]) {}
-
     #[inline(always)]
     fn aggregate(&mut self) {
         *self = mem::take(self).aggregated();
@@ -156,7 +154,6 @@ fn reversed<R: IpRange>(ranges: Vec<R>) -> Vec<R> {
 #[inline(always)]
 fn normalized<R: IpRange>(ranges: Vec<R>) -> Vec<R> {
     let mut normalized_ranges = Vec::new();
-    // dbg!(&ranges);
     for range in ranges.into_iter() {
         let mut first = range.first_address_as_decimal();
         let mut length = range.length();
@@ -166,8 +163,6 @@ fn normalized<R: IpRange>(ranges: Vec<R>) -> Vec<R> {
             break;
         }
         loop {
-            // dbg!(length);
-            // let b = <R::AddressDecimal as NumCast>::from(2).unwrap().pow((first ^ last).trailing_zeros());
             let b = <R::AddressDecimal as NumCast>::from(2).unwrap().pow(min(
                 length.log2(),
                 if first == R::AddressDecimal::zero() {
@@ -195,6 +190,8 @@ fn normalized<R: IpRange>(ranges: Vec<R>) -> Vec<R> {
 /// Both a and b are expected to be sorted ascendently and aggregated.
 #[inline(always)]
 fn difference<R: IpRange>(mut a: Vec<R>, b: &[R]) -> Vec<R> {
+    // The implementation is inspired by:
+    //   https://stackoverflow.com/a/11891418/5488616
     if b.is_empty() {
         return a;
     }
@@ -204,9 +201,7 @@ fn difference<R: IpRange>(mut a: Vec<R>, b: &[R]) -> Vec<R> {
     }
     let mut i = 0;
     let mut j = 0;
-    dbg!(b);
     while i < a.len() && j < b.len() {
-        dbg!(a[i], b[j]);
         if a[i].first_address_as_decimal() < b[j].first_address_as_decimal() {
             if a[i].last_address_as_decimal() <= b[j].last_address_as_decimal() {
                 let end = if a[i].last_address_as_decimal() < b[j].first_address_as_decimal() {
@@ -220,20 +215,19 @@ fn difference<R: IpRange>(mut a: Vec<R>, b: &[R]) -> Vec<R> {
                 )));
                 i += 1;
             } else {
-                // set a[i].start = b[j].start
                 ds.push(R::from_cidr_pair_decimal((
                     a[i].first_address_as_decimal(),
                     b[j].first_address_as_decimal() - R::AddressDecimal::one(),
                 )));
+                // set a[i].start = b[j].last
                 a[i] = R::from_cidr_pair_decimal((
                     b[j].last_address_as_decimal() + R::AddressDecimal::one(),
                     a[i].last_address_as_decimal(),
                 ));
                 j += 1;
             }
-        } else
-        /* if a[i].first_address_as_decimal() >= b[j].first_address_as_decimal() */
-        {
+        } else {
+            /* if a[i].first_address_as_decimal() >= b[j].first_address_as_decimal() */
             if a[i].last_address_as_decimal() <= b[j].last_address_as_decimal() {
                 i += 1;
             } else {
@@ -246,74 +240,9 @@ fn difference<R: IpRange>(mut a: Vec<R>, b: &[R]) -> Vec<R> {
                 j += 1;
             }
         }
-        // else {
-        dbg!(i, j, ds.len());
-        // }
     }
-    dbg!(i);
     if i != a.len() {
-        // TODO; <; ... ... ..., .........................
-        dbg!("bang");
         ds.extend_from_slice(&a[i..]);
     }
     ds
-    // if a[0].first_address_as_decimal() < b[0].first_address_as_decimal() {
-    //     let d = R::from_cidr_pair_decimal((
-    //         a[i].first_address_as_decimal(),
-    //         min(
-    //             a[0].last_address_as_decimal(),
-    //             b[0].first_address_as_decimal() - R::AddressDecimal::one(),
-    //         ),
-    //     ));
-    //     // dbg!(d);
-    //     ds.push(d);
-    // }
-
-    // while i < a.len() {
-    //     while a[i].first_address_as_decimal() > b[j].last_address_as_decimal() {
-    //         j += 1;
-    //     }
-    //     while a[i].first_address_as_decimal() < b[j].first_address_as_decimal() {
-    //         let d = R::from_cidr_pair_decimal((
-    //             a[i].first_address_as_decimal(),
-    //             min(
-    //                 a[i].last_address_as_decimal(),
-    //                 b[j].first_address_as_decimal() - R::AddressDecimal::one(),
-    //             ),
-    //         ));
-    //         dbg!(d);
-    //         ds.push(d);
-
-    //         if a[i].last_address_as_decimal() < b[j].first_address_as_decimal() {
-    //             i += 1;
-    //         } else {
-    //             break;
-    //         }
-    //     }
-    //     if a[i].last_address_as_decimal() < b[j].last_address_as_decimal() {
-    //         i += 1;
-    //     } else {
-    //         if b[j].last_address_as_decimal() == R::AddressDecimal::max_value() {
-    //             break;
-    //         }
-    //         let d = R::from_cidr_pair_decimal((
-    //             b[j].last_address_as_decimal() + R::AddressDecimal::one(),
-    //             min(
-    //                 a[i].last_address_as_decimal(),
-    //                 if j + 2 <= b.len() {
-    //                     b[j + 1].first_address_as_decimal() - R::AddressDecimal::one()
-    //                 } else {
-    //                     R::AddressDecimal::max_value()
-    //                 },
-    //             ),
-    //         ));
-    //         ds.push(d);
-    //         if a[i].last_address_as_decimal() <= d.last_address_as_decimal() {
-    //             i += 1;
-    //         }
-    //         j += 1;
-    //     }
-    //     dbg!(i, j, &ds);
-    // }
-    // ds
 }

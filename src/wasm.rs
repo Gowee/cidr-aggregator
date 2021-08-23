@@ -41,7 +41,7 @@ pub struct Output {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OutputTriple {
     pub ranges: String,
-    // TODO: use String for now to avoid exceeding MAX_SAFE_INTEGER
+    // TODO: use just String for now to avoid exceeding MAX_SAFE_INTEGER
     //  ref: https://github.com/rustwasm/wasm-bindgen/issues/1156
     pub line_count_before: usize,
     pub line_count_after: usize,
@@ -51,9 +51,7 @@ pub struct OutputTriple {
 
 pub fn _aggregated<R: IpRange>(mut ranges: Vec<R>, reverse: bool, exclude_reserved:bool) -> OutputTriple {
     let line_count_before = ranges.len();
-    console_log!("{:?}", ranges);
     ranges.aggregate();
-    console_log!("{:?}", ranges);
     let address_count_before = to_string_overflow(ranges.count_address(), !ranges.is_empty());
     if reverse {
         ranges.reverse();
@@ -61,9 +59,7 @@ pub fn _aggregated<R: IpRange>(mut ranges: Vec<R>, reverse: bool, exclude_reserv
     if exclude_reserved {
         ranges.difference(R::reserved())
     }
-    console_log!("{:?}", ranges);
     ranges.normalize();
-    console_log!("{:?}", ranges);
 
     let line_count_after = ranges.len();
     let address_count_after = to_string_overflow(ranges.count_address(), !ranges.is_empty());

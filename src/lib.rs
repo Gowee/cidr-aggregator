@@ -47,7 +47,6 @@ impl FromStr for EitherIpRange {
     type Err = ();
 
     fn from_str(s: &str) -> Result<EitherIpRange, Self::Err> {
-        dbg!(s);
         if let Some((ip, cidr)) = s.split_once("/").or(Some((s, "")))
         // .and_then(|(ip, cidr)| Some((ip.parse::<IpAddr>().ok()?, cidr.parse::<u8>().ok()?)))
         {
@@ -62,7 +61,6 @@ impl FromStr for EitherIpRange {
             {
                 return Err(()); // a host instead of a range
             }
-            // dbg!(ip, cidr);
             Ok(match ip {
                 IpAddr::V4(ip) => EitherIpRange::V4(Ipv4Range::from_cidr_pair((ip, cidr))),
                 IpAddr::V6(ip) => EitherIpRange::V6(Ipv6Range::from_cidr_pair((ip, cidr))),
@@ -136,7 +134,6 @@ macro_rules! impl_ip_range {
                                 - first_address_and_cidr.1 as u32,
                         ) - 1)
                 };
-                // dbg!(first, last);
                 Self(first, last)
             }
 
@@ -205,7 +202,6 @@ macro_rules! impl_ip_range {
                 {
                     0
                 } else {
-                    // dbg!(self.length());
                     std::mem::size_of::<$decimal_type>() as u32 * 8
                         - self
                             .length()

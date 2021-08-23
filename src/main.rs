@@ -4,8 +4,7 @@ use structopt::StructOpt;
 
 use ::cidr_aggregator::aggregator::Aggregator;
 use ::cidr_aggregator::parser::parse_cidrs;
-use ::cidr_aggregator::{EitherIpRange, IpRange, Ipv4Range, Ipv6Range};
-// use crate::*;
+use ::cidr_aggregator::{IpRange, Ipv4Range, Ipv6Range};
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "cidr-aggregator")]
@@ -44,29 +43,14 @@ fn main() -> io::Result<()> {
 
     v4ranges.aggregate();
     v6ranges.aggregate();
-    // dbg!(&v4ranges.len());
     if opt.reverse {
         v4ranges.reverse();
         v6ranges.reverse();
     }
-    // dbg!(&v4ranges);
-    // v4ranges.difference(&[
-    //     "10.0.0.0/8"
-    //         .parse::<EitherIpRange>()
-    //         .unwrap()
-    //         .into_v4()
-    //         .unwrap(),
-    //     "192.168.0.0/16"
-    //         .parse::<EitherIpRange>()
-    //         .unwrap()
-    //         .into_v4()
-    //         .unwrap(),
-    // ]);
     if opt.exclude_reserved {
         v4ranges.difference(Ipv4Range::reserved());
         v6ranges.difference(Ipv6Range::reserved());
     }
-    // dbg!(&v4ranges);
     v4ranges.normalize();
     v6ranges.normalize();
     if !opt.ignore_invalid && !invalid_entries.is_empty() {
