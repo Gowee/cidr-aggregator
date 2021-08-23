@@ -54,7 +54,7 @@ function App() {
   const classes = useStyles();
   const controlRef = useRef(null as any);
   const [input, setInput] = useState("");
-  const [output, setOutput] = useState({} as any);
+  const [output, setOutput] = useState(undefined as any);
   const [ipKind, setIpKind] = useState("both");
   const [bogonFilter, setBogonFilter] = useState(
     undefined as "reserved" | undefined
@@ -98,7 +98,7 @@ function App() {
       controlRef.current.scrollIntoView({ behavior: "smooth" });
   };
   useEffect(() => {
-    input && handleAggregate();
+    output && handleAggregate(output.reverse);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bogonFilter]);
 
