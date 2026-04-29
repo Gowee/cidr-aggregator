@@ -1,34 +1,37 @@
 [package]
-authors = ["Hung-I Wang <whygowe@gmail.com>"]
-edition = "2018"
 name = "cidr-aggregator"
-version = "0.0.0"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+version = "0.1.0"
+edition = "2021"
+authors = ["Hung-I Wang <whygowe@gmail.com>"]
+description = "Utilities for manipulating CIDR IP ranges. Supports both IPv4 and IPv6."
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/whygowe/cidr-aggregator"
+homepage = "https://cidr-aggregator.pages.dev"
+keywords = ["cidr", "ip", "networking", "ipv4", "ipv6"]
+categories = ["network-programming", "command-line-utilities"]
+readme = "README.md"
+exclude = ["web/", ".github/"]
 
 [lib]
 crate-type = ["cdylib", "rlib"]
 
+[features]
+cli = ["clap", "anyhow"]
+wasm = ["serde", "wasm-bindgen"]
+
 [dependencies]
-# cidr = "0.1"
 num-traits = "0.2"
-serde = {version = "1.0", features = ["derive"]}
-structopt = "0.3"
-itertools = "0.10"
-lazy_static = "1.4"
+itertools = "0.14"
+serde = { version = "1.0", features = ["derive"], optional = true }
+clap = { version = "4", features = ["derive"], optional = true }
+anyhow = { version = "1", optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-wasm-bindgen = {version = "0.2", features = ["serde-serialize"]}
+wasm-bindgen = { version = "0.2", features = ["serde-serialize"], optional = true }
+console_error_panic_hook = { version = "0.1", optional = true }
+wee_alloc = { version = "0.4", optional = true }
 
-# The `console_error_panic_hook` crate provides better debugging of panics by
-# logging them with `console.error`. This is great for development, but requires
-# all the `std::fmt` and `std::panicking` infrastructure, so isn't great for
-# code size when deploying.
-console_error_panic_hook = {version = "0.1", default-features = true, optional = true}
-
-# `wee_alloc` is a tiny allocator for wasm that is only ~1K in code size
-# compared to the default allocator's ~10K. It is slower than the default
-# allocator, however.
-#
-# Unfortunately, `wee_alloc` requires nightly Rust when targeting wasm for now.
-wee_alloc = {version = "0.4", default-features = true, optional = true}
+[[bin]]
+name = "cidr-aggregator"
+path = "src/main.rs"
+required-features = ["cli"]

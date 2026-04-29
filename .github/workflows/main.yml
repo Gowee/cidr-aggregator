@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - '*'
-      - '!pages' # https://github.community/t/github-actions-on-push-not-master/16026/2
+      - '!pages'
   pull_request:
 
 env:
@@ -14,27 +14,26 @@ jobs:
   build-main:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Build
       run: |
         cargo --version
-        cargo build --verbose
+        cargo build --all-features --verbose
     - name: Test
-      run: cargo test --verbose
+      run: cargo test --all-features --verbose
     - name: Clippy
-      run: cargo clippy --verbose
+      run: cargo clippy --all-features --verbose -- -D warnings
     - name: Check Format
       run: cargo fmt -- --check
-
 
   build-web:
     needs: build-main
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-node@v1
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
       with:
-        node-version: '16'
+        node-version: '22'
     - name: Init web
       working-directory: web/
       run: |
@@ -44,9 +43,3 @@ jobs:
     - name: Build
       working-directory: web/
       run: yarn build
-    # - name: Test
-    #   working-directory: web/
-    #   run: yarn test # no effective test so far
-
-# adapted from:
-# https://github.com/Gowee/json2pyi/blob/4e13b4767f97d79e90ecf19a0cb21b1e799d7d48/.github/workflows/main.yml
