@@ -7,6 +7,8 @@ import Grid from "@mui/material/Grid";
 import ButtonGroup from "@mui/material/ButtonGroup";
 import Button from "@mui/material/Button";
 import Tooltip from "@mui/material/Tooltip";
+import Typography from "@mui/material/Typography";
+import Box from "@mui/material/Box";
 
 function OptionsControl(
   {
@@ -26,6 +28,11 @@ function OptionsControl(
   },
   ref: ForwardedRef<any>
 ) {
+  const args: string[] = [];
+  if (ipKind === "ipv4") args.push("-4");
+  if (ipKind === "ipv6") args.push("-6");
+  if (bogonFilter === "reserved") args.push("-x");
+
   return (
     <Grid container ref={ref} sx={{ justifyContent: "space-around" }}>
       <Grid>
@@ -75,6 +82,21 @@ function OptionsControl(
             label="Exclude reserved IPs"
           />
         </Tooltip>
+      </Grid>
+      <Grid sx={{ width: "100%" }}>
+        <Box sx={{ textAlign: "center", mt: 0.5 }}>
+          <Typography
+            variant="caption"
+            component="code"
+            sx={{
+              fontFamily: "monospace",
+              color: "text.secondary",
+              fontSize: "0.75rem",
+            }}
+          >
+            $ cat input.txt | cidr-aggregator{args.length ? " " + args.join(" ") : ""} &gt; output.txt
+          </Typography>
+        </Box>
       </Grid>
     </Grid>
   );
