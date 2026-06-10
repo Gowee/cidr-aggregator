@@ -1,5 +1,5 @@
-import Grid from "@material-ui/core/Grid";
-import Typography from "@material-ui/core/Typography";
+import Grid from "@mui/material/Grid";
+import Typography from "@mui/material/Typography";
 
 function Partial({ name, status }: { name: string; status: any }) {
   return (
@@ -15,11 +15,11 @@ function Partial({ name, status }: { name: string; status: any }) {
 
 export default function OutputStatusLine({ output }: { output: any }) {
   return (
-    <Grid container direction="row" justifyContent="space-between">
-      <Grid item>
+    <Grid container sx={{ justifyContent: "space-between" }}>
+      <Grid>
         <Partial name="IPv4" status={output?.v4} />
       </Grid>
-      <Grid item>
+      <Grid>
         <Partial name="IPv6" status={output?.v6} />
       </Grid>
     </Grid>

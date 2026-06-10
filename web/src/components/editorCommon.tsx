@@ -1,8 +1,5 @@
-import { makeStyles } from "@material-ui/core/styles";
-
-export const useEditorStyles = makeStyles((theme) => ({
-  statusLineWrapper: {
-    marginTop: theme.spacing(0.5),
-    marginBottom: theme.spacing(-1),
-  },
-}));
+// Editor shared styles as sx prop objects
+export const statusLineWrapperSx = {
+  mt: 0.5,
+  mb: -1,
+};

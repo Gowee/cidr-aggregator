@@ -1,39 +1,51 @@
 const path = require('path');
 
-// const MonacoWebpackPlugin = require('monaco-editor-webpack-plugin');
 const { removeModuleScopePlugin } = require('customize-cra');
 const WasmPackPlugin = require("@wasm-tool/wasm-pack-plugin");
 
 module.exports = function override(config, env) {
   config.plugins.push(
-    // new MonacoWebpackPlugin({
-    //   languages: ['json', 'python', 'rust']
-    // }),
     new WasmPackPlugin({
       crateDirectory: path.resolve(__dirname, "../"),
       withTypeScript: true,
-      // it is 'index' by default, different from the default (package name) of wasm-pack
-      outName: 'cidr_aggregator'
+      outName: 'cidr_aggregator',
+      extraArgs: '--features wasm',
     }));
 
-  const wasmExtensionRegExp = /\.wasm$/;
+  // Enable async WASM support for webpack 5
+  config.experiments = {
+    ...config.experiments,
+    asyncWebAssembly: true,
+  };
 
-  config.resolve.extensions.push('.wasm');
-
-  config.module.rules.forEach(rule => {
-    (rule.oneOf || []).forEach(oneOf => {
-      if (oneOf.loader && oneOf.loader.indexOf('file-loader') >= 0) {
-        // Make file-loader ignore WASM files
-        oneOf.exclude.push(wasmExtensionRegExp);
-      }
-    });
+  // Fix fullySpecified issue with MUI v9 and react-transition-group
+  config.module.rules.push({
+    test: /\.m?js$/,
+    resolve: {
+      fullySpecified: false,
+    },
   });
 
-  // Add a dedicated loader for WASM
-  config.module.rules.push({
-    test: wasmExtensionRegExp,
-    include: path.resolve(__dirname, 'src'),
-    use: [{ loader: require.resolve('wasm-loader'), options: {} }]
+  // In CRA's webpack 5 oneOf rules, the catch-all asset/resource rule at the
+  // end does NOT exclude .wasm files. We need to add .wasm to its exclude list
+  // so webpack 5's asyncWebAssembly experiment can handle them natively with
+  // proper named exports (required by wasm-bindgen).
+  config.module.rules.forEach(rule => {
+    (rule.oneOf || []).forEach(oneOf => {
+      // Handle the catch-all asset/resource rule (last in oneOf)
+      if (oneOf.type === 'asset/resource' && oneOf.exclude) {
+        const prevExclude = Array.isArray(oneOf.exclude) ? oneOf.exclude : [oneOf.exclude];
+        oneOf.exclude = [...prevExclude, /\.wasm$/];
+      }
+      // Also handle file-loader rules from older configs
+      if (oneOf.loader && oneOf.loader.indexOf('file-loader') >= 0) {
+        const prevExclude = oneOf.exclude;
+        oneOf.exclude = [
+          ...(Array.isArray(prevExclude) ? prevExclude : [prevExclude].filter(Boolean)),
+          /\.wasm$/,
+        ];
+      }
+    });
   });
 
   removeModuleScopePlugin()(config);

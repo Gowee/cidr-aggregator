@@ -1,7 +1,6 @@
-import Box from "@material-ui/core/Box";
-import TextField from "@material-ui/core/TextField";
+import Box from "@mui/material/Box";
+import TextField from "@mui/material/TextField";
 
-import { useEditorStyles } from "./editorCommon";
 import OutputStatusLine from "./OutputStatusLine";
 import WarningFab from "./WarningFab";
 
@@ -12,10 +11,8 @@ export default function OutputEditor({
   ipKind: string;
   output: any;
 }) {
-  const classes = useEditorStyles();
-
   return (
-    <Box position="relative">
+    <Box sx={{ position: "relative" }}>
       {" "}
       {/* for Fab positioning */}
       {/* TODO: nowrap */}
@@ -26,7 +23,7 @@ export default function OutputEditor({
         multiline
         fullWidth
         rows={16}
-        inputProps={{ wrap: "soft" }}
+        slotProps={{ htmlInput: { wrap: "soft" } }}
         value={[
           ipKind !== "ipv6" && output?.v4?.ranges,
           ipKind !== "ipv4" && output?.v6?.ranges,
@@ -34,7 +31,7 @@ export default function OutputEditor({
           .filter((v) => v)
           .join("\n")}
       />
-      <Box className={classes.statusLineWrapper}>
+      <Box sx={{ mt: 0.5, mb: -1 }}>
         <OutputStatusLine output={output} />
       </Box>
       <WarningFab invalidLines={output?.invalid} />

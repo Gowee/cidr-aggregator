@@ -1,12 +1,12 @@
 import { forwardRef, ForwardedRef } from "react";
 
-import FormGroup from "@material-ui/core/FormGroup";
-import FormControlLabel from "@material-ui/core/FormControlLabel";
-import Switch from "@material-ui/core/Switch";
-import Grid from "@material-ui/core/Grid";
-import ButtonGroup from "@material-ui/core/ButtonGroup";
-import Button from "@material-ui/core/Button";
-import Tooltip from "@material-ui/core/Tooltip";
+import FormGroup from "@mui/material/FormGroup";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import Switch from "@mui/material/Switch";
+import Grid from "@mui/material/Grid";
+import ButtonGroup from "@mui/material/ButtonGroup";
+import Button from "@mui/material/Button";
+import Tooltip from "@mui/material/Tooltip";
 
 function OptionsControl(
   {
@@ -27,8 +27,8 @@ function OptionsControl(
   ref: ForwardedRef<any>
 ) {
   return (
-    <Grid container ref={ref} direction="row" justifyContent="space-around">
-      <Grid item>
+    <Grid container ref={ref} sx={{ justifyContent: "space-around" }}>
+      <Grid>
         <ButtonGroup color="primary" aria-label="control button group">
           <Button color="primary" onClick={() => handleAggregate()}>
             Aggregate
@@ -38,7 +38,7 @@ function OptionsControl(
           </Button>
         </ButtonGroup>
       </Grid>
-      <Grid item>
+      <Grid>
         <FormGroup row>
           <FormControlLabel
             control={
@@ -62,7 +62,7 @@ function OptionsControl(
           />
         </FormGroup>
       </Grid>
-      <Grid item>
+      <Grid>
         <Tooltip title="If activated, all reserved IPs for special purposes (RFC 5735 and RFC 6890) are filtered out from the output. This might be useful when reversing.">
           <FormControlLabel
             control={
