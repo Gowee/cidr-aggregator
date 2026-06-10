@@ -113,6 +113,7 @@ jobs:
           ext=""
           [[ "$platform" == windows-* ]] && ext=".exe"
           cp "$dir/cidr-aggregator$ext" "cidr_aggregator/_bin/$platform/"
+          chmod +x "cidr_aggregator/_bin/$platform/cidr-aggregator$ext"
         done
         ls -R cidr_aggregator/_bin/
     - name: Build wheel
