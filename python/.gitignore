@@ -1,0 +1,8 @@
+# Built binaries (placed by build.sh)
+cidr_aggregator/_bin/*/
+!cidr_aggregator/_bin/.gitkeep
+
+# Python build artifacts
+dist/
+build/
+*.egg-info/

@@ -1,0 +1,31 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "cidr-aggregator"
+version = "0.1.0"
+description = "Aggregate, normalize, reverse, and difference CIDR IP ranges."
+readme = "../README.md"
+license = "MIT OR Apache-2.0"
+requires-python = ">=3.8"
+authors = [{ name = "Hung-I Wang", email = "whygowe@gmail.com" }]
+keywords = ["cidr", "ip", "networking", "ipv4", "ipv6"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: Apache Software License",
+    "Topic :: System :: Networking",
+]
+
+[project.urls]
+Homepage = "https://cidr-aggregator.pages.dev"
+Repository = "https://github.com/gowee/cidr-aggregator"
+
+[project.scripts]
+cidr-aggregator = "cidr_aggregator._launcher:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["cidr_aggregator"]
+artifacts = ["cidr_aggregator/_bin/**/*"]
+
