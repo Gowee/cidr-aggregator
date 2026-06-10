@@ -17,3 +17,8 @@ Cargo.lock
 
 # custom
 .vscode/
+
+# Python
+python/dist/
+python/build/
+python/*.egg-info/
