@@ -52,7 +52,7 @@ fn build_output<R: IpRange>(
 #[wasm_bindgen]
 pub fn aggregate(cidrs: &str, reverse: bool, exclude_reserved: bool) -> JsValue {
     let (v4ranges, v6ranges, invalid_entries) = parse_cidrs(cidrs);
-    JsValue::from_serde(&Output {
+    serde_wasm_bindgen::to_value(&Output {
         v4: build_output(v4ranges, reverse, exclude_reserved),
         v6: build_output(v6ranges, reverse, exclude_reserved),
         invalid: invalid_entries.join("\n"),
