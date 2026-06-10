@@ -22,7 +22,12 @@ export default function WarningBanner({ invalidLines }: { invalidLines: string }
         fullWidth
         value={invalidLines}
         onFocus={(event) => event.target.select()}
-        sx={{ mt: 0.5 }}
+        sx={{
+          mt: 0.5,
+          "& .MuiInput-underline:before": { borderBottom: "none" },
+          "& .MuiInput-underline:after": { borderBottom: "none" },
+          "& .MuiInput-underline:hover:not(.Mui-disabled):before": { borderBottom: "none" },
+        }}
         slotProps={{
           input: { readOnly: true },
           htmlInput: { style: { fontSize: "0.8rem", padding: 4 } },
