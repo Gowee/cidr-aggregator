@@ -3,12 +3,13 @@ name: Release
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  # Build binaries for all platforms
+  # Build binaries for all platforms (runs on tag push and manual trigger)
   build-cli:
     strategy:
       fail-fast: false
@@ -47,38 +48,10 @@ jobs:
         name: binary-${{ matrix.platform }}
         path: target/${{ matrix.target }}/release/cidr-aggregator${{ matrix.ext }}
 
-  # Create GitHub release with all binaries
-  github-release:
+  # Build Python wheel (runs on tag push and manual trigger)
+  build-wheel:
     needs: build-cli
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-    - uses: actions/checkout@v4
-    - uses: actions/download-artifact@v4
-      with:
-        path: artifacts
-    - name: Prepare release assets
-      run: |
-        mkdir release
-        for dir in artifacts/binary-*; do
-          platform=$(basename "$dir" | sed 's/binary-//')
-          ext=""
-          [[ "$platform" == windows-* ]] && ext=".exe"
-          cp "$dir/cidr-aggregator$ext" "release/cidr-aggregator-${platform}${ext}"
-        done
-    - name: Create GitHub release
-      uses: softprops/action-gh-release@v2
-      with:
-        files: release/*
-        generate_release_notes: true
-
-  # Build and publish Python package to PyPI
-  pypi-release:
-    needs: build-cli
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write  # for trusted publishing
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-python@v5
@@ -103,7 +76,51 @@ jobs:
         pip install build
         cd python
         python -m build --wheel
+    - uses: actions/upload-artifact@v4
+      with:
+        name: python-wheel
+        path: python/dist/*.whl
+
+  # Create GitHub release (only on tag push)
+  github-release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build-cli
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+    - name: Prepare release assets
+      run: |
+        mkdir release
+        for dir in artifacts/binary-*; do
+          platform=$(basename "$dir" | sed 's/binary-//')
+          ext=""
+          [[ "$platform" == windows-* ]] && ext=".exe"
+          cp "$dir/cidr-aggregator$ext" "release/cidr-aggregator-${platform}${ext}"
+        done
+    - name: Create GitHub release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: release/*
+        generate_release_notes: true
+
+  # Publish to PyPI (only on tag push)
+  pypi-release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build-wheel
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write  # for trusted publishing
+    steps:
+    - uses: actions/download-artifact@v4
+      with:
+        name: python-wheel
+        path: dist
     - name: Publish to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
-        packages-dir: python/dist/
+        packages-dir: dist/
