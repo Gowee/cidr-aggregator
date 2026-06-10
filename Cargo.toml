@@ -36,3 +36,9 @@ wee_alloc = { version = "0.4", optional = true }
 name = "cidr-aggregator"
 path = "src/main.rs"
 required-features = ["cli"]
+
+[profile.release]
+strip = true
+lto = true
+opt-level = "z"
+panic = "abort"
