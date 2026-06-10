@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import Box from "@mui/material/Box";
+import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import Alert from "@mui/material/Alert";
 import WarningIcon from "@mui/icons-material/Warning";
@@ -11,18 +11,23 @@ export default function WarningBanner({ invalidLines }: { invalidLines: string }
 
   if (invalidCount === 0) return null;
 
-  const preview = invalidLines.split("\n").filter(Boolean).slice(0, 3);
-  const hasMore = invalidCount > 3;
-
   return (
     <Alert variant="standard" severity="warning" icon={<WarningIcon />} sx={{ mt: 1, mb: 1 }}>
       <Typography variant="body2" sx={{ fontWeight: "bold" }}>
         {invalidCount} invalid line{invalidCount !== 1 && "s"} skipped
       </Typography>
-      <Box component="pre" sx={{ m: 0, mt: 0.5, fontSize: "0.8rem", whiteSpace: "pre-wrap", wordBreak: "break-all" }}>
-        {preview.join("\n")}
-        {hasMore && `\n… and ${invalidCount - 3} more`}
-      </Box>
+      <TextField
+        variant="standard"
+        multiline
+        fullWidth
+        value={invalidLines}
+        onFocus={(event) => event.target.select()}
+        sx={{ mt: 0.5 }}
+        slotProps={{
+          input: { readOnly: true },
+          htmlInput: { style: { fontSize: "0.8rem", padding: 4 } },
+        }}
+      />
     </Alert>
   );
 }
