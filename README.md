@@ -1,7 +1,6 @@
 # cidr-aggregator
 
 [![Crates.io](https://img.shields.io/crates/v/cidr-aggregator)](https://crates.io/crates/cidr-aggregator)
-[![PyPI](https://img.shields.io/pypi/v/cidr-aggregator)](https://pypi.org/project/cidr-aggregator/)
 [![docs.rs](https://img.shields.io/docsrs/cidr-aggregator)](https://docs.rs/cidr-aggregator)
 [![License: MIT OR Apache-2.0](https://img.shields.io/crates/l/cidr-aggregator)](LICENSE)
 

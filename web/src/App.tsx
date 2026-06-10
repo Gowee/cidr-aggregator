@@ -86,6 +86,7 @@ function App() {
             toggleIpv6={toggleIpv6}
             bogonFilter={bogonFilter}
             toggleReservedFilter={toggleReservedFilter}
+            reverse={output?.reverse ?? false}
             handleAggregate={handleAggregate}
             ref={controlRef}
           />

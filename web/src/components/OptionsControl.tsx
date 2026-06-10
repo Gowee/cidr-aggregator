@@ -17,6 +17,7 @@ function OptionsControl(
     toggleIpv6,
     bogonFilter,
     toggleReservedFilter,
+    reverse,
     handleAggregate,
   }: {
     ipKind: string;
@@ -24,6 +25,7 @@ function OptionsControl(
     toggleIpv6: () => void;
     bogonFilter?: string;
     toggleReservedFilter: () => void;
+    reverse: boolean;
     handleAggregate: (reverse?: boolean) => void;
   },
   ref: ForwardedRef<any>
@@ -31,6 +33,7 @@ function OptionsControl(
   const args: string[] = [];
   if (ipKind === "ipv4") args.push("-4");
   if (ipKind === "ipv6") args.push("-6");
+  if (reverse) args.push("-r");
   if (bogonFilter === "reserved") args.push("-x");
 
   return (
@@ -95,7 +98,7 @@ function OptionsControl(
               display: "block",
             }}
           >
-            $ uvx cidr-aggregator{args.length ? " " + args.join(" ") : ""} &lt; input.txt &gt; output.txt
+            $ cidr-aggregator{args.length ? " " + args.join(" ") : ""} &lt; input.txt &gt; output.txt
           </Typography>
           <Typography
             variant="caption"
@@ -107,7 +110,7 @@ function OptionsControl(
               opacity: 0.7,
             }}
           >
-            uv tool install cidr-aggregator
+            uv tool install cidr-aggregator{" · "}OR{" · "}uvx cidr-aggregator --help
           </Typography>
         </Box>
       </Grid>
