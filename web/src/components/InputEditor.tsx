@@ -19,6 +19,7 @@ export default function InputEditor({
         id="input"
         label="Input"
         placeholder="6.6.6.0/24"
+        variant="standard"
         multiline
         fullWidth
         autoFocus

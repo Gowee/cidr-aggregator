@@ -2,7 +2,7 @@ import Box from "@mui/material/Box";
 import TextField from "@mui/material/TextField";
 
 import OutputStatusLine from "./OutputStatusLine";
-import WarningFab from "./WarningFab";
+import WarningBanner from "./WarningFab";
 
 export default function OutputEditor({
   ipKind,
@@ -11,18 +11,19 @@ export default function OutputEditor({
   ipKind: string;
   output: any;
 }) {
+  const hasInvalid = output?.invalid && output.invalid.trim().length > 0;
+
   return (
-    <Box sx={{ position: "relative" }}>
-      {" "}
-      {/* for Fab positioning */}
-      {/* TODO: nowrap */}
+    <Box>
       <TextField
         id="input"
         label="Output"
         placeholder="No input"
+        variant="standard"
         multiline
         fullWidth
         rows={16}
+        error={hasInvalid}
         slotProps={{ htmlInput: { wrap: "soft" } }}
         value={[
           ipKind !== "ipv6" && output?.v4?.ranges,
@@ -31,7 +32,7 @@ export default function OutputEditor({
           .filter((v) => v)
           .join("\n")}
       />
-      <WarningFab invalidLines={output?.invalid} />
+      <WarningBanner invalidLines={output?.invalid} />
       <Box sx={{ mt: 0.5, mb: -1 }}>
         <OutputStatusLine output={output} />
       </Box>
