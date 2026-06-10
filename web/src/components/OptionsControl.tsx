@@ -92,9 +92,22 @@ function OptionsControl(
               fontFamily: "monospace",
               color: "text.secondary",
               fontSize: "0.75rem",
+              display: "block",
             }}
           >
-            $ cat input.txt | cidr-aggregator{args.length ? " " + args.join(" ") : ""} &gt; output.txt
+            $ uvx cidr-aggregator{args.length ? " " + args.join(" ") : ""} &lt; input.txt &gt; output.txt
+          </Typography>
+          <Typography
+            variant="caption"
+            component="code"
+            sx={{
+              fontFamily: "monospace",
+              color: "text.secondary",
+              fontSize: "0.65rem",
+              opacity: 0.7,
+            }}
+          >
+            uv tool install cidr-aggregator
           </Typography>
         </Box>
       </Grid>

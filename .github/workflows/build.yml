@@ -2,9 +2,7 @@ name: Build
 
 on:
   push:
-    branches:
-      - '*'
-      - '!pages'
+    branches: [main]
     tags: ['v*']
   pull_request:
 
@@ -26,24 +24,6 @@ jobs:
       run: cargo clippy --all-features --verbose -- -D warnings
     - name: Check Format
       run: cargo fmt -- --check
-
-  build-web:
-    needs: build-main
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
-      with:
-        node-version: '22'
-    - name: Init web
-      working-directory: web/
-      run: |
-        node --version
-        yarn --version
-        yarn install
-    - name: Build
-      working-directory: web/
-      run: yarn build
 
   build-cli:
     needs: build-main

@@ -1,17 +1,17 @@
 # cidr-aggregator
 
 [![Crates.io](https://img.shields.io/crates/v/cidr-aggregator)](https://crates.io/crates/cidr-aggregator)
+[![PyPI](https://img.shields.io/pypi/v/cidr-aggregator)](https://pypi.org/project/cidr-aggregator/)
 [![docs.rs](https://img.shields.io/docsrs/cidr-aggregator)](https://docs.rs/cidr-aggregator)
 [![License: MIT OR Apache-2.0](https://img.shields.io/crates/l/cidr-aggregator)](LICENSE)
 
-Aggregate, normalize, reverse, and difference CIDR (IP range) entries. Both IPv4 and IPv6 are supported.
+Aggregate, reverse, and difference CIDR (IP range) entries. Both IPv4 and IPv6 are supported.
 
 ## Features
 
 - **Aggregate** — merge overlapping and adjacent CIDR ranges into a minimal set
 - **Reverse** — compute the complement (all IPs *not* in the given ranges)
 - **Difference** — subtract one set of ranges from another
-- **Normalize** — split non-canonical ranges into proper CIDR blocks
 - **Exclude reserved** — filter out special-purpose addresses (RFC 5735, RFC 6890)
 - **IPv4 + IPv6** — unified API via the `IpRange` trait
 
@@ -19,7 +19,17 @@ Aggregate, normalize, reverse, and difference CIDR (IP range) entries. Both IPv4
 
 ### CLI
 
-Install with Cargo:
+Install with [uv](https://docs.astral.sh/uv/) (recommended):
+
+```sh
+# Run directly
+uvx cidr-aggregator --help
+
+# Or install permanently
+uv tool install cidr-aggregator
+```
+
+Or install with Cargo:
 
 ```sh
 cargo install cidr-aggregator --features cli
