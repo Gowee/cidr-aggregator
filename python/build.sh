@@ -27,8 +27,8 @@ if [[ -z "$TARGET" ]]; then
   esac
 else
   case "$TARGET" in
-    x86_64-unknown-linux-gnu)     PLATFORM="linux-x64" ;;
-    aarch64-unknown-linux-gnu)    PLATFORM="linux-arm64" ;;
+    x86_64-unknown-linux-*|x86_64-unknown-linux-gnu)  PLATFORM="linux-x64" ;;
+    aarch64-unknown-linux-*|aarch64-unknown-linux-gnu) PLATFORM="linux-arm64" ;;
     x86_64-apple-darwin)          PLATFORM="macos-x64" ;;
     aarch64-apple-darwin)         PLATFORM="macos-arm64" ;;
     x86_64-pc-windows-msvc)       PLATFORM="windows-x64" ;;
