@@ -42,3 +42,6 @@ strip = true
 lto = true
 opt-level = "z"
 panic = "abort"
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = ["-O", "--enable-bulk-memory"]
