@@ -27,6 +27,7 @@ export default function InputEditor({
         slotProps={{ htmlInput: { wrap: "soft" } }}
         value={input}
         onChange={(event) => setInput(event.target.value)}
+        onFocus={(event) => event.target.select()}
       />
       <Box sx={statusLineWrapperSx}>
         <Typography variant="caption" color="textSecondary">

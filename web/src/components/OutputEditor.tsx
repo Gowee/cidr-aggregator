@@ -31,6 +31,7 @@ export default function OutputEditor({
         ]
           .filter((v) => v)
           .join("\n")}
+        onFocus={(event) => event.target.select()}
       />
       <WarningBanner invalidLines={output?.invalid} />
       <Box sx={{ mt: 0.5, mb: -1 }}>
