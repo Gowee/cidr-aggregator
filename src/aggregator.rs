@@ -259,16 +259,25 @@ pub(crate) fn difference<R: IpRange>(mut a: Vec<R>, b: &[R]) -> Vec<R> {
     ds
 }
 
-/// Run the full pipeline: aggregate, optionally reverse, optionally exclude
-/// reserved addresses, then normalize.
+/// Run the full pipeline: aggregate, optionally reverse, optionally difference
+/// excluded ranges, optionally exclude reserved addresses, then normalize.
 ///
 /// This is the standard workflow used by both the CLI and the WASM web app.
+/// If `exclude` is non-empty, it must be sorted and aggregated.
 #[doc(hidden)]
-pub fn process<R: IpRange>(ranges: Vec<R>, reverse: bool, exclude_reserved: bool) -> Vec<R> {
+pub fn process<R: IpRange>(
+    ranges: Vec<R>,
+    reverse: bool,
+    exclude_reserved: bool,
+    exclude: &[R],
+) -> Vec<R> {
     let mut ranges = ranges;
     ranges.aggregate();
     if reverse {
         ranges.reverse();
+    }
+    if !exclude.is_empty() {
+        ranges.difference(exclude);
     }
     if exclude_reserved {
         ranges.difference(R::reserved());
@@ -282,7 +291,7 @@ mod tests {
     use std::net::Ipv6Addr;
 
     use crate::{
-        aggregator::Aggregator,
+        aggregator::{process, Aggregator},
         tests::{v4, v4s, v6s},
         IpRange, Ipv4Range, Ipv6Range,
     };
@@ -600,5 +609,25 @@ mod tests {
         let b = v4s(&["10.0.0.0/24"]);
         ranges.difference(&b);
         assert_eq!(ranges, v4s(&["10.0.1.0/24"]));
+    }
+
+    // ---- process ----
+
+    #[test]
+    fn process_with_exclude() {
+        let input = v4s(&["10.0.0.0/16"]);
+        let exclude = v4s(&["10.0.1.0/24"]);
+        let res = process(input, false, false, &exclude);
+        assert!(!res.contains(&v4("10.0.1.0/24")));
+        assert_eq!(res.count_address(), (1 << 16) - 256);
+    }
+
+    #[test]
+    fn process_with_exclude_and_reserved() {
+        let input = v4s(&["10.0.0.0/16", "1.1.1.0/24"]);
+        let exclude = v4s(&["1.1.1.128/25"]);
+        // 10.0.0.0/16 is reserved, so it should be removed by exclude_reserved
+        let res = process(input, false, true, &exclude);
+        assert_eq!(res, v4s(&["1.1.1.0/25"]));
     }
 }

@@ -212,7 +212,7 @@ macro_rules! impl_ip_range {
             fn from_cidr_pair(first_address_and_cidr: (Self::Address, u8)) -> Self {
                 let first: $decimal_type = first_address_and_cidr.0.into();
                 let last = if first_address_and_cidr.1 == 0 {
-                    Self::AddressDecimal::max_value()
+                    Self::AddressDecimal::MAX
                 } else {
                     first
                         + (<Self::AddressDecimal as NumCast>::from(2).unwrap().pow(

@@ -53,10 +53,18 @@ Reverse (compute complement of all input ranges):
 cidr-aggregator -r < ranges.txt
 ```
 
+Exclude CIDRs from file(s):
+
+```sh
+cidr-aggregator -f input.txt -x exclude1.txt -x exclude2.txt -o output.txt
+# Or using process substitution (Bash/Zsh):
+cidr-aggregator -f input.txt -x <(curl -s https://example.com/bad.txt)
+```
+
 Exclude reserved/private IPs:
 
 ```sh
-cidr-aggregator -x < ranges.txt
+cidr-aggregator -X < ranges.txt
 ```
 
 Show statistics (address count, line count):
@@ -64,6 +72,14 @@ Show statistics (address count, line count):
 ```sh
 cidr-aggregator -s < ranges.txt
 ```
+
+#### Input Format
+
+All inputs (stdin, `-f`, and `-x`) accept:
+- IPv4 & IPv6 CIDR notations (e.g., `10.0.0.0/8`, `2001:db8::/32`)
+- Bare IP addresses (e.g., `192.168.1.1`, treated as `/32` or `/128`)
+- Comment lines starting with `#` (e.g., `# allowlist`)
+- Blank lines and leading/trailing whitespace
 
 ### Library
 

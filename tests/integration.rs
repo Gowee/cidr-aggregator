@@ -128,3 +128,180 @@ fn full_range() {
     assert_eq!(v4.export(), "0.0.0.0/0");
     assert_eq!(v4.len(), 1);
 }
+
+#[test]
+fn full_pipeline_with_exclude() {
+    let (v4, _, _) = parse_cidrs("10.0.0.0/16");
+    let (v4_exclude, _, _) = parse_cidrs("10.0.1.0/24");
+    let res = cidr_aggregator::aggregator::process(v4, false, false, &v4_exclude);
+    assert_eq!(res.len(), 8);
+    assert_eq!(res.count_address(), (1u32 << 16) - 256);
+    assert!(!res.contains(&Ipv4Range::from_cidr_pair_decimal((0x0a000100, 0x0a0001ff))));
+}
+
+#[cfg(feature = "cli")]
+mod cli_tests {
+    use std::io::Write;
+    use std::path::{Path, PathBuf};
+    use std::process::{Command, Stdio};
+
+    fn bin_cmd() -> Command {
+        Command::new(env!("CARGO_BIN_EXE_cidr-aggregator"))
+    }
+
+    struct TempFile(PathBuf);
+    impl TempFile {
+        fn new(name: &str, content: &str) -> Self {
+            use std::sync::atomic::{AtomicUsize, Ordering};
+            static COUNTER: AtomicUsize = AtomicUsize::new(0);
+            let id = COUNTER.fetch_add(1, Ordering::Relaxed);
+            let path = std::env::temp_dir().join(format!(
+                "cidr_test_{}_{}_{}",
+                std::process::id(),
+                id,
+                name
+            ));
+            std::fs::write(&path, content).unwrap();
+            Self(path)
+        }
+        fn path(&self) -> &Path {
+            &self.0
+        }
+    }
+    impl Drop for TempFile {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_file(&self.0);
+        }
+    }
+
+    #[test]
+    fn cli_exclude_file() {
+        let input_file = TempFile::new("input.txt", "# allow\n10.0.0.0/23\n");
+        let exclude_file = TempFile::new("exclude.txt", "# block\n10.0.1.0/24\n");
+
+        let output = bin_cmd()
+            .arg("-f")
+            .arg(input_file.path())
+            .arg("-x")
+            .arg(exclude_file.path())
+            .output()
+            .unwrap();
+
+        assert!(output.status.success());
+        let stdout = String::from_utf8(output.stdout).unwrap();
+        assert_eq!(stdout.trim(), "10.0.0.0/24");
+    }
+
+    #[test]
+    fn cli_multiple_exclude_files() {
+        let input_file = TempFile::new("input.txt", "10.0.0.0/23\n");
+        let exclude_file1 = TempFile::new("ex1.txt", "10.0.1.0/24\n");
+        let exclude_file2 = TempFile::new("ex2.txt", "10.0.0.0/25\n");
+
+        let output = bin_cmd()
+            .arg("-f")
+            .arg(input_file.path())
+            .arg("-x")
+            .arg(exclude_file1.path())
+            .arg("-x")
+            .arg(exclude_file2.path())
+            .output()
+            .unwrap();
+
+        assert!(output.status.success());
+        let stdout = String::from_utf8(output.stdout).unwrap();
+        assert_eq!(stdout.trim(), "10.0.0.128/25");
+    }
+
+    #[test]
+    fn cli_stdin_dash_and_stdout_dash() {
+        let mut child = bin_cmd()
+            .arg("-f")
+            .arg("-")
+            .arg("-o")
+            .arg("-")
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .spawn()
+            .unwrap();
+
+        child
+            .stdin
+            .as_mut()
+            .unwrap()
+            .write_all(b"10.0.0.0/24\n10.0.1.0/24\n")
+            .unwrap();
+
+        let output = child.wait_with_output().unwrap();
+        assert!(output.status.success());
+        let stdout = String::from_utf8(output.stdout).unwrap();
+        assert_eq!(stdout.trim(), "10.0.0.0/23");
+    }
+
+    #[test]
+    fn cli_exclude_reserved_capital_x() {
+        let mut child = bin_cmd()
+            .arg("-X")
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .spawn()
+            .unwrap();
+
+        child
+            .stdin
+            .as_mut()
+            .unwrap()
+            .write_all(b"10.0.0.0/24\n1.1.1.0/24\n")
+            .unwrap();
+
+        let output = child.wait_with_output().unwrap();
+        assert!(output.status.success());
+        let stdout = String::from_utf8(output.stdout).unwrap();
+        assert_eq!(stdout.trim(), "1.1.1.0/24");
+    }
+
+    #[test]
+    fn cli_exclude_missing_file_fails() {
+        let output = bin_cmd()
+            .arg("-f")
+            .arg("-")
+            .arg("-x")
+            .arg("this_file_does_not_exist_at_all.txt")
+            .stdin(Stdio::piped())
+            .output()
+            .unwrap();
+
+        assert!(!output.status.success());
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        assert!(stderr.contains("Failed to read exclude file"));
+    }
+
+    #[test]
+    fn cli_exclude_invalid_lines_fails_by_default_succeeds_with_ignore() {
+        let input_file = TempFile::new("input.txt", "1.1.1.0/24\n");
+        let exclude_file = TempFile::new("bad_exclude.txt", "invalid-entry\n");
+
+        // Should fail without -i
+        let output_fail = bin_cmd()
+            .arg("-f")
+            .arg(input_file.path())
+            .arg("-x")
+            .arg(exclude_file.path())
+            .output()
+            .unwrap();
+        assert!(!output_fail.status.success());
+
+        // Should succeed with -i
+        let output_ok = bin_cmd()
+            .arg("-f")
+            .arg(input_file.path())
+            .arg("-x")
+            .arg(exclude_file.path())
+            .arg("-i")
+            .output()
+            .unwrap();
+        assert!(output_ok.status.success());
+        let stdout = String::from_utf8(output_ok.stdout).unwrap();
+        assert_eq!(stdout.trim(), "1.1.1.0/24");
+    }
+}

@@ -34,7 +34,7 @@ function OptionsControl(
   if (ipKind === "ipv4") args.push("-4");
   if (ipKind === "ipv6") args.push("-6");
   if (reverse) args.push("-r");
-  if (bogonFilter === "reserved") args.push("-x");
+  if (bogonFilter === "reserved") args.push("-X");
 
   return (
     <Grid container ref={ref} sx={{ justifyContent: "space-around" }}>

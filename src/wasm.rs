@@ -36,7 +36,7 @@ fn build_output<R: IpRange>(
     let line_count_before = ranges.len();
     ranges.aggregate();
     let address_count_before = to_string_overflow(ranges.count_address(), !ranges.is_empty());
-    ranges = aggregator::process(ranges, reverse, exclude_reserved);
+    ranges = aggregator::process(ranges, reverse, exclude_reserved, &[]);
     let line_count_after = ranges.len();
     let address_count_after = to_string_overflow(ranges.count_address(), !ranges.is_empty());
 
