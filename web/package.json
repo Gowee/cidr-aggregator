@@ -1,6 +1,6 @@
 {
   "name": "cidr-aggregator",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "dependencies": {
     "@emotion/react": "^11.14.0",

@@ -8,20 +8,23 @@ from pathlib import Path
 
 def _platform_dir() -> str:
     system = platform.system()
-    machine = platform.machine()
+    machine = platform.machine().lower()
 
-    if system == "Linux" and machine == "x86_64":
-        return "linux-x64"
-    if system == "Linux" and machine == "aarch64":
-        return "linux-arm64"
-    if system == "Darwin" and machine == "x86_64":
-        return "macos-x64"
-    if system == "Darwin" and machine == "arm64":
-        return "macos-arm64"
-    if system == "Windows" and machine == "AMD64":
-        return "windows-x64"
+    if system == "Linux":
+        if machine in ("x86_64", "amd64"):
+            return "linux-x64"
+        if machine in ("aarch64", "arm64"):
+            return "linux-arm64"
+    elif system == "Darwin":
+        if machine in ("x86_64", "amd64"):
+            return "macos-x64"
+        if machine in ("arm64", "aarch64"):
+            return "macos-arm64"
+    elif system == "Windows":
+        if machine in ("amd64", "x86_64", "arm64"):
+            return "windows-x64"
 
-    print(f"Unsupported platform: {system}-{machine}", file=sys.stderr)
+    print(f"Unsupported platform: {system}-{platform.machine()}", file=sys.stderr)
     sys.exit(1)
 
 
@@ -35,4 +38,20 @@ def main() -> None:
         print("The package may not include a binary for your platform.", file=sys.stderr)
         sys.exit(1)
 
-    os.execvp(str(binary), [str(binary)] + sys.argv[1:])
+    args = [str(binary)] + sys.argv[1:]
+
+    if platform.system() == "Windows":
+        import subprocess
+
+        try:
+            res = subprocess.run(args)
+            sys.exit(res.returncode)
+        except KeyboardInterrupt:
+            sys.exit(130)
+    else:
+        os.execvp(str(binary), args)
+
+
+if __name__ == "__main__":
+    main()
+

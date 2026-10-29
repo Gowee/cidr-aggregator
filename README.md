@@ -87,7 +87,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-cidr-aggregator = "0.1"
+cidr-aggregator = "0.2"
 ```
 
 **Aggregate** overlapping and adjacent blocks into a minimal set:

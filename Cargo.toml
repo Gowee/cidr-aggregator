@@ -1,6 +1,6 @@
 [package]
 name = "cidr-aggregator"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 authors = ["Hung-I Wang <whygowe@gmail.com>"]
 description = "Utilities for manipulating CIDR IP ranges. Supports both IPv4 and IPv6."
