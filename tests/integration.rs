@@ -304,4 +304,58 @@ mod cli_tests {
         let stdout = String::from_utf8(output_ok.stdout).unwrap();
         assert_eq!(stdout.trim(), "1.1.1.0/24");
     }
+
+    #[test]
+    fn cli_multiline_input_and_multiline_exclude() {
+        let input_content = "\
+# IPv4 ranges
+10.0.0.0/22
+192.168.0.0/23
+
+# IPv6 ranges
+2001:db8::/48
+";
+        let exclude_content1 = "\
+# Exclude some IPv4 subnets
+10.0.1.0/24
+10.0.2.0/24
+
+# Exclude an IPv6 subnet
+2001:db8:0:1::/64
+";
+        let exclude_content2 = "\
+# Exclude another IPv4 subnet from the second block
+192.168.1.0/24
+";
+
+        let input_file = TempFile::new("input.txt", input_content);
+        let ex1 = TempFile::new("ex1.txt", exclude_content1);
+        let ex2 = TempFile::new("ex2.txt", exclude_content2);
+
+        let output = bin_cmd()
+            .arg("-f")
+            .arg(input_file.path())
+            .arg("-x")
+            .arg(ex1.path())
+            .arg("-x")
+            .arg(ex2.path())
+            .output()
+            .unwrap();
+
+        assert!(output.status.success());
+        let stdout = String::from_utf8(output.stdout).unwrap();
+
+        // 10.0.0.0/22 minus 10.0.1.0/24 and 10.0.2.0/24 leaves 10.0.0.0/24 and 10.0.3.0/24
+        assert!(stdout.contains("10.0.0.0/24"));
+        assert!(stdout.contains("10.0.3.0/24"));
+        assert!(!stdout.contains("10.0.1.0/24"));
+        assert!(!stdout.contains("10.0.2.0/24"));
+
+        // 192.168.0.0/23 minus 192.168.1.0/24 leaves 192.168.0.0/24
+        assert!(stdout.contains("192.168.0.0/24"));
+        assert!(!stdout.contains("192.168.1.0/24"));
+
+        // 2001:db8::/48 minus 2001:db8:0:1::/64 has the /64 removed
+        assert!(!stdout.contains("2001:db8:0:1::/64"));
+    }
 }
