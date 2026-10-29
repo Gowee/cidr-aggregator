@@ -58,6 +58,7 @@ cp "$BIN_PATH" "$BIN_DIR/$PLATFORM/"
 
 echo "==> Building Python wheel..."
 cd "$SCRIPT_DIR"
+cp "$REPO_DIR/README.md" "$SCRIPT_DIR/README.md"
 python -m build --wheel
 
 echo "==> Done: $(ls dist/*.whl)"

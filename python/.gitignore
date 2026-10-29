@@ -6,3 +6,4 @@ cidr_aggregator/_bin/*/
 dist/
 build/
 *.egg-info/
+README.md

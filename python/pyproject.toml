@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "cidr-aggregator"
 version = "0.2.0"
 description = "Aggregate, reverse, and difference CIDR IP ranges."
-readme = "../README.md"
+readme = "README.md"
 license = "MIT OR Apache-2.0"
 requires-python = ">=3.8"
 authors = [{ name = "Hung-I Wang", email = "whygowe@gmail.com" }]
