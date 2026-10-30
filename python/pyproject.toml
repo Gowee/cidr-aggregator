@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "cidr-aggregator"
-version = "0.2.1"
+dynamic = ["version"]
 description = "Aggregate, reverse, and difference CIDR IP ranges."
 readme = "README.md"
 license = "MIT OR Apache-2.0"
@@ -25,7 +25,9 @@ Repository = "https://github.com/gowee/cidr-aggregator"
 [project.scripts]
 cidr-aggregator = "cidr_aggregator._launcher:main"
 
+[tool.hatch.version]
+path = "cidr_aggregator/__init__.py"
+
 [tool.hatch.build.targets.wheel]
 packages = ["cidr_aggregator"]
 artifacts = ["cidr_aggregator/_bin/**/*"]
-

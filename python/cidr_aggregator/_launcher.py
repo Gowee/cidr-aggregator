@@ -8,7 +8,8 @@ from pathlib import Path
 
 def _platform_dir() -> str:
     system = platform.system()
-    machine = platform.machine().lower()
+    raw_machine = platform.machine()
+    machine = raw_machine.lower()
 
     if system == "Linux":
         if machine in ("x86_64", "amd64"):
@@ -21,10 +22,11 @@ def _platform_dir() -> str:
         if machine in ("arm64", "aarch64"):
             return "macos-arm64"
     elif system == "Windows":
+        # Windows on ARM64 runs windows-x64 via built-in x64 emulation
         if machine in ("amd64", "x86_64", "arm64"):
             return "windows-x64"
 
-    print(f"Unsupported platform: {system}-{platform.machine()}", file=sys.stderr)
+    print(f"Unsupported platform: {system}-{raw_machine}", file=sys.stderr)
     sys.exit(1)
 
 
@@ -35,7 +37,10 @@ def main() -> None:
 
     if not binary.exists():
         print(f"Binary not found: {binary}", file=sys.stderr)
-        print("The package may not include a binary for your platform.", file=sys.stderr)
+        print(
+            "The package may not include a binary for your platform.",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     args = [str(binary)] + sys.argv[1:]
@@ -54,4 +59,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

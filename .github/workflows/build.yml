@@ -14,6 +14,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+    - name: Test Python launcher
+      run: |
+        cd python
+        python3 -m unittest discover -s tests -v
     - name: Build
       run: |
         cargo --version
@@ -100,6 +104,7 @@ jobs:
       run: |
         pip install build
         cd python
+        python -m unittest discover -s tests -v
         cp ../README.md .
         python -m build --wheel
     - uses: actions/upload-artifact@v4
